@@ -1,0 +1,10 @@
+import { createSimulator } from './server';
+const port = Number(process.env.SALES_SIM_PORT ?? 4010);
+const host = process.env.SALES_SIM_HOST ?? '127.0.0.1';
+if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('SALES_SIM_PORT inválida');
+const allowedOrigins = process.env.SALES_SIM_ALLOWED_ORIGINS?.split(',').map(value => value.trim()).filter(Boolean);
+const { server } = createSimulator({ allowedOrigins });
+server.listen(port, host, () => console.log(`Sales API SIMULADO: http://${host}:${port}\nLegacy form /index.php?r=api/... e laboratório /api/mobile/v1; não representa homologação do backend.\nUse somente dados fictícios. Estado descartado ao reiniciar.`));
+server.on('error', error => { console.error(error.message); process.exitCode = 1; });
+process.on('SIGINT', () => server.close());
+process.on('SIGTERM', () => server.close());

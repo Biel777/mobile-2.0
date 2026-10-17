@@ -1,0 +1,397 @@
+import type { CommercialTable, Coupon, Customer, FlagGoal, Goals, TrackedOrder } from '../domain/types';
+
+const regular: CommercialTable = {
+  id: 101,
+  name: 'Farma Sul — Regular Abr/Out',
+  minValue: 400,
+  monthBilledNet: 80,
+  minValueBasis: 'NET',
+  expiresAt: '2026-12-31',
+  onlyMobile: true,
+  products: [
+    {
+      ean: '78910001',
+      name: 'BUSCODUO 20 CPR',
+      family: 'Analgésicos',
+      listPrice: 18.5,
+      baseDiscount: 10,
+      minQty: 6,
+      packSize: 6,
+      required: 'none',
+      tiers: [
+        { quantMin: 12, percent: 5 },
+        { quantMin: 24, percent: 8 },
+        { quantMin: 36, percent: 10 },
+        { quantMin: 48, percent: 12 },
+        { quantMin: 60, percent: 15 },
+      ],
+    },
+    {
+      ean: '78910002',
+      name: 'DORFLEX 36 CPR',
+      family: 'Analgésicos',
+      listPrice: 14.9,
+      baseDiscount: 8,
+      minQty: 6,
+      packSize: 6,
+      required: 'none',
+      tiers: [{ quantMin: 18, percent: 4 }],
+    },
+    {
+      ean: '78910003',
+      name: 'NEOSALDINA 30 DRG',
+      family: 'Analgésicos',
+      listPrice: 22,
+      baseDiscount: 12,
+      minQty: 6,
+      maxQty: 60,
+      packSize: 6,
+      required: 'none',
+      ceilingDiscount: 12,
+      photoRestricted: true,
+      tiers: [],
+    },
+  ],
+  triggers: [{ triggerEan: '78910001', threshold: 10, childEan: '78910002', extraPercent: 3 }],
+};
+
+const combo: CommercialTable = {
+  id: 202,
+  name: 'Combo Inverno — Mix obrigatório',
+  minValue: 200,
+  minValueBasis: 'NET',
+  comboParticipation: 40,
+  expiresAt: '2026-12-31',
+  onlyMobile: true,
+  products: [
+    {
+      ean: '78920001',
+      name: 'KIT IMUNIDADE 3UN',
+      family: 'Vitaminas',
+      listPrice: 39.9,
+      baseDiscount: 5,
+      minQty: 6,
+      packSize: 6,
+      required: 'required',
+      isCombo: true,
+      tiers: [],
+    },
+    {
+      ean: '78920002',
+      name: 'VITAMINA C 30 CPR',
+      family: 'Vitaminas',
+      listPrice: 12,
+      baseDiscount: 0,
+      minQty: 6,
+      packSize: 6,
+      required: 'none',
+      tiers: [],
+    },
+  ],
+  triggers: [],
+};
+
+const campaign: CommercialTable = {
+  id: 303,
+  name: 'Farma Sul — Campanha 14 dias',
+  minValue: 250,
+  dividePedido: true,
+  minValueBasis: 'NET',
+  expiresAt: '2026-11-30',
+  onlyMobile: true,
+  products: [
+    {
+      ean: '78910001',
+      name: 'BUSCODUO 20 CPR',
+      family: 'Analgésicos',
+      listPrice: 18.5,
+      baseDiscount: 18,
+      minQty: 6,
+      packSize: 6,
+      required: 'none',
+      tiers: [
+        { quantMin: 12, percent: 4 },
+        { quantMin: 24, percent: 7 },
+        { quantMin: 36, percent: 9 },
+        { quantMin: 48, percent: 11 },
+        { quantMin: 60, percent: 14 },
+      ],
+    },
+    {
+      ean: '78910002',
+      name: 'DORFLEX 36 CPR',
+      family: 'Analgésicos',
+      listPrice: 14.9,
+      baseDiscount: 12,
+      minQty: 6,
+      packSize: 6,
+      required: 'none',
+      tiers: [],
+    },
+  ],
+  triggers: [],
+};
+
+const customers: Customer[] = [
+  {
+    id: 11,
+    name: 'Drogaria Central Ltda',
+    cnpj: '12.345.678/0001-90',
+    city: 'Campinas/SP',
+    areaId: 7,
+    hasSalesArea: true,
+    tableIds: [101, 303],
+    distributors: [
+      { id: 501, name: 'Profarma Campinas', priority: 1, tipoEnvio: 2, prazos: [14, 21, 28] },
+      { id: 502, name: 'Santa Cruz SP', priority: 2, tipoEnvio: 2, prazos: [7, 14, 21] },
+      { id: 503, name: 'Panpharma', priority: 3, tipoEnvio: 2, prazos: [21, 28, 35] },
+      { id: 504, name: 'Servimed', priority: 4, tipoEnvio: 2, prazos: [14, 28] },
+      { id: 505, name: 'Dimesul', priority: 5, tipoEnvio: 1, prazos: [7, 14] },
+      { id: 506, name: 'Profarma Jundiaí', priority: 6, tipoEnvio: 2, prazos: [21, 28] },
+      { id: 507, name: 'Emefarma', priority: 7, tipoEnvio: 2, prazos: [14, 21] },
+      { id: 508, name: 'Dislab', priority: 8, tipoEnvio: 2, prazos: [28, 35] },
+    ],
+  },
+  {
+    id: 22,
+    name: 'Farmácia São José',
+    cnpj: '98.765.432/0001-10',
+    city: 'Jundiaí/SP',
+    areaId: 7,
+    hasSalesArea: true,
+    tableIds: [202],
+    distributors: [{ id: 501, name: 'Profarma Campinas', priority: 1, tipoEnvio: 2, prazos: [14, 21, 28] }],
+  },
+  {
+    id: 33,
+    name: 'PDV sem área (bloqueado)',
+    cnpj: '11.111.111/0001-11',
+    city: 'Atibaia/SP',
+    areaId: 0,
+    hasSalesArea: false,
+    tableIds: [101],
+    distributors: [],
+  },
+];
+
+const coupons: Coupon[] = [{ code: 'CAMPO2', percent: 2, minNet: 300 }];
+
+const goals: Goals = {
+  periodLabel: 'Outubro 2026',
+  metaValor: 100000,
+  realizadoValor: 40000,
+  metaQtd: 2500,
+  realizadoQtd: 980,
+  pdvsCarteira: 18,
+  pdvsPositivados: 11,
+  pdvsSemPositivar: [
+    { id: 22, name: 'Farmácia São José', city: 'Jundiaí/SP' },
+    { id: 44, name: 'Drogaria do Largo', city: 'Campinas/SP' },
+    { id: 55, name: 'Farmácia Boa Vista', city: 'Valinhos/SP' },
+  ],
+  families: [
+    {
+      family: 'Analgésicos',
+      metaPdvs: 12,
+      faturados: 8,
+      semPositivar: [
+        { id: 22, name: 'Farmácia São José', city: 'Jundiaí/SP' },
+        { id: 44, name: 'Drogaria do Largo', city: 'Campinas/SP' },
+        { id: 55, name: 'Farmácia Boa Vista', city: 'Valinhos/SP' },
+        { id: 61, name: 'Drogaria Primavera', city: 'Campinas/SP' },
+      ],
+    },
+    {
+      family: 'Vitaminas',
+      metaPdvs: 10,
+      faturados: 3,
+      semPositivar: [
+        { id: 11, name: 'Drogaria Central Ltda', city: 'Campinas/SP' },
+        { id: 22, name: 'Farmácia São José', city: 'Jundiaí/SP' },
+        { id: 44, name: 'Drogaria do Largo', city: 'Campinas/SP' },
+        { id: 55, name: 'Farmácia Boa Vista', city: 'Valinhos/SP' },
+        { id: 61, name: 'Drogaria Primavera', city: 'Campinas/SP' },
+        { id: 62, name: 'Farmácia do Parque', city: 'Valinhos/SP' },
+        { id: 63, name: 'Drogaria Norte', city: 'Jundiaí/SP' },
+      ],
+    },
+  ],
+};
+
+const flags: FlagGoal[] = [
+  {
+    name: 'Rede Farma Sul',
+    minNet: 2000,
+    billedNet: 1240,
+    families: [
+      { family: 'Analgésicos', minNet: 800, billedNet: 620 },
+      { family: 'Vitaminas', minNet: 500, billedNet: 180 },
+      { family: 'Higiene', minNet: 400, billedNet: 440 },
+    ],
+  },
+  {
+    name: 'Rede Farma Norte',
+    minNet: 1500,
+    billedNet: 1620,
+    families: [
+      { family: 'Infantil', minNet: 350, billedNet: 90 },
+      { family: 'Dermocosméticos', minNet: 600, billedNet: 410 },
+    ],
+  },
+  {
+    name: 'Grupo Drogarias Centro',
+    minNet: 3000,
+    billedNet: 980,
+    families: [
+      { family: 'Genéricos', minNet: 1200, billedNet: 400 },
+      { family: 'OTC', minNet: 700, billedNet: 210 },
+      { family: 'Nutrição', minNet: 450, billedNet: 450 },
+    ],
+  },
+];
+
+const tracked: TrackedOrder[] = [
+  {
+    id: 8801,
+    orderClientId: 'seed-8801',
+    customerName: 'Drogaria Central Ltda',
+    tableName: regular.name,
+    status: 10,
+    prazo: 28,
+    createdAt: '2026-10-10T14:22:00',
+    subOrders: [
+      {
+        id: 88011,
+        distributorName: 'Profarma Campinas',
+        status: 10,
+        prazo: 28,
+        items: [
+          {
+            ean: '78910001',
+            name: 'BUSCODUO 20 CPR',
+            unitPrice: 18.5,
+            discountPercent: 15,
+            quantPed: 24,
+            quantEsp: 18,
+            quantNot: 18,
+            reason: 'Ruptura parcial',
+          },
+        ],
+        invoice: { number: 'NF-44190', value: 283.05, issuedAt: '2026-10-12' },
+      },
+      {
+        id: 88012,
+        distributorName: 'Santa Cruz SP',
+        status: 1,
+        prazo: 28,
+        items: [
+          {
+            ean: '78910002',
+            name: 'DORFLEX 36 CPR',
+            unitPrice: 14.9,
+            discountPercent: 8,
+            quantPed: 12,
+            quantEsp: 12,
+            quantNot: 12,
+          },
+        ],
+        invoice: { number: 'NF-44191', value: 164.5, issuedAt: '2026-10-12' },
+      },
+    ],
+  },
+  {
+    id: 8803,
+    orderClientId: 'seed-8803',
+    customerName: 'Drogaria Central Ltda',
+    tableName: campaign.name,
+    status: 3,
+    prazo: 14,
+    dataEnvio: '2026-10-20',
+    createdAt: '2026-10-16T09:00:00',
+    subOrders: [
+      {
+        id: 88031,
+        distributorName: 'Santa Cruz SP',
+        status: 3,
+        prazo: 14,
+        items: [
+          {
+            ean: '78910001',
+            name: 'BUSCODUO 20 CPR',
+            unitPrice: 18.5,
+            discountPercent: 18,
+            quantPed: 12,
+            quantEsp: 0,
+            quantNot: 0,
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 8814,
+    orderClientId: 'seed-8814',
+    customerName: 'Drogaria Central Ltda',
+    tableName: regular.name,
+    status: 14,
+    prazo: 28,
+    createdAt: '2026-10-15T11:00:00',
+    subOrders: [
+      {
+        id: 88141,
+        distributorName: 'Profarma Campinas',
+        status: 14,
+        prazo: 28,
+        items: [
+          {
+            ean: '78910001',
+            name: 'BUSCODUO 20 CPR',
+            unitPrice: 18.5,
+            discountPercent: 10,
+            quantPed: 12,
+            quantEsp: 0,
+            quantNot: 0,
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 8804,
+    orderClientId: 'seed-8804',
+    customerName: 'Farmácia São José',
+    tableName: combo.name,
+    status: 4,
+    prazo: 21,
+    createdAt: '2026-10-16T18:10:00',
+    subOrders: [
+      {
+        id: 88041,
+        distributorName: 'Profarma Campinas',
+        status: 4,
+        prazo: 21,
+        items: [
+          {
+            ean: '78920001',
+            name: 'KIT IMUNIDADE 3UN',
+            unitPrice: 39.9,
+            discountPercent: 5,
+            quantPed: 6,
+            quantEsp: 0,
+            quantNot: 0,
+          },
+        ],
+      },
+    ],
+  },
+];
+
+export const fixtures = {
+  user: { id: 77, name: 'Marina Souza', login: 'marina', area: 'Campinas', bloqueiaNegociado: true },
+  tables: [regular, combo, campaign],
+  customers,
+  coupons,
+  goals,
+  flags,
+  tracked,
+};

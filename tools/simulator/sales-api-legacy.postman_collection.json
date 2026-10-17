@@ -1,0 +1,551 @@
+{
+  "info": {
+    "name": "Sales API Legacy — laboratório Força de Vendas",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Rotas/formulários conforme mapa fornecido. Envelopes de leitura e códigos CF são sintéticos; homologar com respostas do tenant. Somente dados fictícios por padrão. Sem garantias de deduplicação em backend real; não reenviar sem conferir."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:4010",
+      "type": "string"
+    },
+    {
+      "key": "login",
+      "value": "marina",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "demo",
+      "type": "string"
+    },
+    {
+      "key": "imei",
+      "value": "postman-development",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "syncCode",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "billingCode",
+      "value": "CF-501-21",
+      "type": "string"
+    },
+    {
+      "key": "orderClientId",
+      "value": "postman-demo-001",
+      "type": "string"
+    },
+    {
+      "key": "orderId",
+      "value": "9000",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Login fictício Legacy",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "url": "{{baseUrl}}/index.php?r=api/authentication/new",
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "user[login]",
+              "value": "{{login}}",
+              "type": "text"
+            },
+            {
+              "key": "user[senha]",
+              "value": "{{password}}",
+              "type": "text"
+            },
+            {
+              "key": "user[imei]",
+              "value": "{{imei}}",
+              "type": "text"
+            },
+            {
+              "key": "user[versao]",
+              "value": "0.1.0",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const data = pm.response.json();",
+              "if (data.status === \"ok\") { pm.collectionVariables.set(\"token\", data.token); pm.collectionVariables.set(\"syncCode\", String(data.codigo_sincronizacao)); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Renovar sync",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "url": "{{baseUrl}}/index.php?r=api/session/new",
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "user[login]",
+              "value": "{{login}}",
+              "type": "text"
+            },
+            {
+              "key": "user[token]",
+              "value": "{{token}}",
+              "type": "text"
+            },
+            {
+              "key": "user[codigo_sincronizacao]",
+              "value": "{{syncCode}}",
+              "type": "text"
+            },
+            {
+              "key": "user[versao]",
+              "value": "0.1.0",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const data = pm.response.json();",
+              "if (data.codigo_sincronizacao) pm.collectionVariables.set(\"syncCode\", String(data.codigo_sincronizacao));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Clientes",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "url": "{{baseUrl}}/index.php?r=api/clientes/index",
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "user[login]",
+              "value": "{{login}}",
+              "type": "text"
+            },
+            {
+              "key": "user[token]",
+              "value": "{{token}}",
+              "type": "text"
+            },
+            {
+              "key": "user[codigo_sincronizacao]",
+              "value": "{{syncCode}}",
+              "type": "text"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "4. Condições",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "url": "{{baseUrl}}/index.php?r=api/negociacoes/index&user%5Blogin%5D={{login}}&user%5Btoken%5D={{token}}&user%5Bcodigo_sincronizacao%5D={{syncCode}}&extras%5Bsomente_mobile%5D=1"
+      }
+    },
+    {
+      "name": "5. Vínculos PDV/tabela",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "url": "{{baseUrl}}/index.php?r=api/clientes/getClientesTabelasNegociacoes",
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "user[login]",
+              "value": "{{login}}",
+              "type": "text"
+            },
+            {
+              "key": "user[token]",
+              "value": "{{token}}",
+              "type": "text"
+            },
+            {
+              "key": "user[codigo_sincronizacao]",
+              "value": "{{syncCode}}",
+              "type": "text"
+            },
+            {
+              "key": "somente_mobile",
+              "value": "1",
+              "type": "text"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "6. Produtos globais",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "url": "{{baseUrl}}/index.php?r=api/produtos/index",
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "user[login]",
+              "value": "{{login}}",
+              "type": "text"
+            },
+            {
+              "key": "user[token]",
+              "value": "{{token}}",
+              "type": "text"
+            },
+            {
+              "key": "user[codigo_sincronizacao]",
+              "value": "{{syncCode}}",
+              "type": "text"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "7. Distribuidores",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "url": "{{baseUrl}}/index.php?r=api/clientes/getDistribuidores&user%5Blogin%5D={{login}}&user%5Btoken%5D={{token}}&user%5Bcodigo_sincronizacao%5D={{syncCode}}&cnpj_cliente=12.345.678/0001-90"
+      }
+    },
+    {
+      "name": "8. Preços da tabela (perfil do laboratório)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "url": "{{baseUrl}}/index.php?r=api/produtos/getProdutosDaTabela",
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "user[login]",
+              "value": "{{login}}",
+              "type": "text"
+            },
+            {
+              "key": "user[token]",
+              "value": "{{token}}",
+              "type": "text"
+            },
+            {
+              "key": "user[codigo_sincronizacao]",
+              "value": "{{syncCode}}",
+              "type": "text"
+            },
+            {
+              "key": "id_cliente",
+              "value": "11",
+              "type": "text"
+            },
+            {
+              "key": "id_tabela",
+              "value": "101",
+              "type": "text"
+            },
+            {
+              "key": "id_distribuidor",
+              "value": "501",
+              "type": "text"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "9. Enviar pedido fictício",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "url": "{{baseUrl}}/index.php?r=api/pedidos/receberPedidoMobile",
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "user[login]",
+              "value": "{{login}}",
+              "type": "text"
+            },
+            {
+              "key": "user[token]",
+              "value": "{{token}}",
+              "type": "text"
+            },
+            {
+              "key": "user[codigo_sincronizacao]",
+              "value": "{{syncCode}}",
+              "type": "text"
+            },
+            {
+              "key": "id_cliente",
+              "value": "11",
+              "type": "text"
+            },
+            {
+              "key": "id_tabela",
+              "value": "101",
+              "type": "text"
+            },
+            {
+              "key": "datahora_criacao",
+              "value": "2026-10-16 12:00:00",
+              "type": "text"
+            },
+            {
+              "key": "order_client_id",
+              "value": "{{orderClientId}}",
+              "type": "text"
+            },
+            {
+              "key": "codigo_pedido",
+              "value": "{{orderClientId}}",
+              "type": "text"
+            },
+            {
+              "key": "ordem_envio[0][id_distribuidor]",
+              "value": "501",
+              "type": "text"
+            },
+            {
+              "key": "ordem_envio[0][prioridade]",
+              "value": "1",
+              "type": "text"
+            },
+            {
+              "key": "ordem_envio[0][codigo_faturamento]",
+              "value": "{{billingCode}}",
+              "type": "text"
+            },
+            {
+              "key": "produtos[0][ean]",
+              "value": "78910001",
+              "type": "text"
+            },
+            {
+              "key": "produtos[0][quantidade]",
+              "value": "120",
+              "type": "text"
+            },
+            {
+              "key": "produtos[0][desconto]",
+              "value": "25",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const data = pm.response.json();",
+              "if (data.id_pedido) pm.collectionVariables.set(\"orderId\", String(data.id_pedido));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. Consultar status",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "url": "{{baseUrl}}/index.php?r=api/pedidos/getStatusPedidos&user%5Blogin%5D={{login}}&user%5Btoken%5D={{token}}&user%5Bcodigo_sincronizacao%5D={{syncCode}}&pedidos%5B%5D={{orderId}}"
+      }
+    },
+    {
+      "name": "11. Acompanhamento",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "url": "{{baseUrl}}/index.php?r=api/subPedidos/index",
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "user[login]",
+              "value": "{{login}}",
+              "type": "text"
+            },
+            {
+              "key": "user[token]",
+              "value": "{{token}}",
+              "type": "text"
+            },
+            {
+              "key": "user[codigo_sincronizacao]",
+              "value": "{{syncCode}}",
+              "type": "text"
+            },
+            {
+              "key": "time",
+              "value": "1970-01-01 00:00:00",
+              "type": "text"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "12. Notas",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "url": "{{baseUrl}}/index.php?r=api/nota/index",
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "user[login]",
+              "value": "{{login}}",
+              "type": "text"
+            },
+            {
+              "key": "user[token]",
+              "value": "{{token}}",
+              "type": "text"
+            },
+            {
+              "key": "user[codigo_sincronizacao]",
+              "value": "{{syncCode}}",
+              "type": "text"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "13. Metas (perfil do laboratório)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "url": "{{baseUrl}}/index.php?r=api/metas/desempenhoArea",
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "user[login]",
+              "value": "{{login}}",
+              "type": "text"
+            },
+            {
+              "key": "user[token]",
+              "value": "{{token}}",
+              "type": "text"
+            },
+            {
+              "key": "user[codigo_sincronizacao]",
+              "value": "{{syncCode}}",
+              "type": "text"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "Força de Vendas",
+    "slug": "forca-vendas",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "forcavendas",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "br.fidelize.forcavendas"
+    },
+    "android": {
+      "package": "br.fidelize.forcavendas"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router"
+    ]
+  }
+}
