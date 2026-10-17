@@ -1,4 +1,4 @@
-/** Tokens extraídos de design system do projeto (Semantics + Primitives). */
+/** Tokens do design system do projeto (Semantics + Primitives). */
 export const colors = {
   page: '#f5f6f6',
   pageDefault: '#ffffff',

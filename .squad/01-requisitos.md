@@ -1,6 +1,6 @@
 # Requisitos — v1
 Origem: `C:\Users\glima\projetos\sales-api` (PHP 7.4 / Yii 1.x / Postgres) | Destino: app mobile força de vendas (Android + iOS), pasta `C:\Users\glima\Mobile 2.0`
-
+Origem: backend legado (PHP 7.4 / Yii 1.x / Postgres) | Destino: app mobile de força de vendas (Android + iOS).
 ## Visão geral do sistema
 
 Sales API é o sistema de gestão de pedidos e cargas para a indústria farmacêutica. A entidade central é o **Pedido**, ligado a um **PDV/Cliente**, a uma **Condição comercial** (`condicoes_fat`) e a um ou mais **Operadores logísticos** (filiais/distribuidores). O pedido vira **Sub-pedido** na hora do envio (um por tentativa de distribuidor) e segue até o **espelho** (retorno) e a **nota fiscal**.

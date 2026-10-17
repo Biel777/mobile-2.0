@@ -1,6 +1,6 @@
 # Mapa Legacy fornecido pelo usuário
 
-Origem declarada: monólito `C:\Users\glima\projetos\sales-api`, módulo `legacy/protected/modules/api`. Recebido nesta conversa em 16/10/2026. Não inspecionamos esse monólito nesta máquina. Este arquivo registra o contrato fornecido, as decisões e lacunas; os envelopes detalhados de cadastros ainda exigem exemplos reais.
+Origem: mapa de integração do backend legado fornecido pelo usuário. Este documento registra o contrato informado e suas lacunas; os envelopes detalhados de leitura ainda exigem homologação.
 
 ## Transporte e sessão
 

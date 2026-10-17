@@ -1,8 +1,8 @@
-# Força de Vendas — integração Sales API
+# Força de Vendas
 
 App Expo/React Native + TypeScript para clientes, condições comerciais, pedidos offline, acompanhamento e metas.
 
-## Testar sem Sales API instalado
+## Testar com o simulador local
 
 Na pasta deste projeto:
 
@@ -25,11 +25,11 @@ O painel permite editar JSON, enviar e repetir chamadas, sincronizar carteira, c
 
 `npm run web` usa demonstração interna por padrão. Para HTTP, use `npm run dev:integration` ou copie `.env.example` para `.env.local` e execute o app com o simulador em outro terminal (`npm run simulator`). Reinicie o Expo ao alterar variáveis.
 
-`EXPO_PUBLIC_API_BASE_URL` recebe a base Legacy, por exemplo `https://tenant/legacy`, sem a query `?r=`. `EXPO_PUBLIC_API_URL` é um alias. `EXPO_PUBLIC_API_PROTOCOL=legacy` seleciona as rotas Yii/formulários; `mobile-v1` mantém o laboratório normalizado opcional. Variáveis `EXPO_PUBLIC_*` são públicas; não use senhas ou tokens nelas. A configuração é separada por ambiente no cache local. O cache v4 da demonstração anterior não é migrado nem apagado; o novo cache v5 começa vazio e só recebe cadastros após login/sincronização.
+`EXPO_PUBLIC_API_BASE_URL` recebe a base do sistema legado, por exemplo `https://tenant/legacy`, sem a query `?r=`. `EXPO_PUBLIC_API_URL` é um alias. `EXPO_PUBLIC_API_PROTOCOL=legacy` seleciona as rotas Yii/formulários; `mobile-v1` mantém o laboratório normalizado opcional. Variáveis `EXPO_PUBLIC_*` são públicas; não use senhas ou tokens nelas. A configuração é separada por ambiente no cache local. O cache v4 da demonstração anterior não é migrado nem apagado; o novo cache v5 começa vazio e só recebe cadastros após login/sincronização.
 
-Os rascunhos ficam no aparelho. Uma fila interrompida preserva a chave e o payload. No Legacy, confirmação incerta não é reenviada automaticamente: consulta-se o ID remoto conhecido ou o usuário confere antes de autorizar uma repetição. No protocolo de laboratório mobile-v1, o servidor simulado garante idempotência. Pedidos com confirmação incerta ficam bloqueados para edição até reconciliação ou confirmação do reenvio. Trocar de conta limpa a carteira ativa; sair preserva rascunhos para reautenticar a mesma conta. No navegador o token fica apenas em memória e é necessário entrar novamente após recarregar; o cache permanece disponível offline com a sessão local. Android/iOS usam SecureStore para token.
+Os rascunhos ficam no aparelho. Uma fila interrompida preserva a chave e o payload. No protocolo legado, confirmação incerta não é reenviada automaticamente: consulta-se o ID remoto conhecido ou o usuário confere antes de autorizar uma repetição. No protocolo de laboratório mobile-v1, o servidor simulado garante idempotência. Pedidos com confirmação incerta ficam bloqueados para edição até reconciliação ou confirmação do reenvio. Trocar de conta limpa a carteira ativa; sair preserva rascunhos para reautenticar a mesma conta. No navegador o token fica apenas em memória e é necessário entrar novamente após recarregar; o cache permanece disponível offline com a sessão local. Android/iOS usam SecureStore para token.
 
-## Integração Legacy direta e limites
+## Integração legada direta e limites
 
 O adaptador `src/api/legacy.ts` chama diretamente `index.php?r=api/...`, com `application/x-www-form-urlencoded`. Cobre autenticação/sessão, carteira e condições, produtos, envio, consulta de status, subpedidos, notas e metas. Não exige um gateway ou alteração do monólito.
 
@@ -53,3 +53,9 @@ npx expo export --platform web --max-workers 2
 ```
 
 Os testes incluem domínio comercial, transporte HTTP, endpoints reais do simulador em portas temporárias, fila concorrente e troca de sessão. Builds e comportamento nativos precisam ser validados em Android/iOS. A simulação não prova paridade completa com regras comerciais do backend.
+
+## Configuração neutra e dados locais
+
+As variáveis públicas usam o prefixo `EXPO_PUBLIC_API_`; copie os nomes atuais de `.env.example` e reinicie o Expo. O transporte por formulário usa `EXPO_PUBLIC_API_PROTOCOL=legacy`. O simulador usa `SALES_SIM_PORT`.
+
+Na mudança de namespace, o app recupera um cache anterior apenas quando existe um único candidato do mesmo ambiente e URL. Preserva carteira, rascunhos, histórico e visitas, sem apagar o cache de origem. A sessão recuperada exige autenticação novamente; nenhum token antigo é reutilizado por adivinhação. Se houver caches ambíguos, o app não escolhe entre eles.

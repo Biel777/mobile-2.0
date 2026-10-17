@@ -160,3 +160,21 @@ describe('Legacy transporte direto e perfil de leitura do laboratório', () => {
     expect(() => legacyStatus('__proto__')).toThrow(/status desconhecido/);
   });
 });
+
+describe('campo neutro de vínculo de área', () => {
+  const customer = { id_cliente: 11, nome: 'Central', cnpj: '123', cidade: 'Campinas', id_area: 7 };
+  it('aceita alias legado único sem alterar os endpoints', async () => {
+    const { client } = harness({ 'clientes/index': { clientes: [{ ...customer, tem_area_external: 1 }] } });
+    expect((await client.getBootstrap()).customers[0].hasSalesArea).toBe(true);
+  });
+  it('preserva false explícito e não procura outro campo para conceder vínculo', async () => {
+    const { client } = harness({ 'clientes/index': { clientes: [{ ...customer, tem_area: false, tem_area_external: 1 }] } });
+    expect((await client.getBootstrap()).customers[0].hasSalesArea).toBe(false);
+  });
+  it('rejeita flags ausentes, ambíguas e valores inválidos', async () => {
+    for (const flags of [{}, { tem_area_a: 1, tem_area_b: 1 }, { tem_area_external: 'yes' }, { tem_area: null, tem_area_external: 1 }]) {
+      const { client } = harness({ 'clientes/index': { clientes: [{ ...customer, ...flags }] } });
+      await expect(client.getBootstrap()).rejects.toThrow(/tem_area/);
+    }
+  });
+});

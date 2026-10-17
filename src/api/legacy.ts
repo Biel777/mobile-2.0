@@ -16,6 +16,13 @@ function list(value: unknown, label: string): Raw[] { if (!Array.isArray(value) 
 function string(value: unknown, label: string): string { if (typeof value !== 'string') return incomplete(`${label}: texto ausente`); return value; }
 function numeric(value: unknown, label: string): number { if ((typeof value !== 'number' && typeof value !== 'string') || value === '' || !Number.isFinite(Number(value))) return incomplete(`${label}: número ausente`); return Number(value); }
 function flag(value: unknown, label: string): boolean { if (![true, false, 0, 1, '0', '1'].includes(value as any)) return incomplete(`${label}: booleano ausente`); return value === true || value === 1 || value === '1'; }
+/** A neutral field wins; a single legacy area alias is accepted without guessing between flags. */
+function customerAreaFlag(customer: Raw): boolean {
+  if (Object.prototype.hasOwnProperty.call(customer, 'tem_area')) return flag(customer.tem_area, 'tem_area');
+  const aliases = Object.keys(customer).filter(key => key.startsWith('tem_area_'));
+  if (aliases.length !== 1) return incomplete('tem_area: campo ausente ou aliases ambíguos');
+  return flag(customer[aliases[0]], 'tem_area');
+}
 const normalize = (v: string) => v.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
 export function legacyStatus(value: unknown): number {
   const text = string(value, 'descrição do status');
@@ -158,7 +165,7 @@ export function createLegacyClient(options: LegacyClientOptions): SalesApiClient
       const customers: BootstrapData['customers'] = [];
       for (const c of list(clientsRaw.clientes, 'clientes')) {
         const distributorsRaw = await request('clientes/getDistribuidores', { cnpj_cliente: c.cnpj }, 'GET');
-        customers.push({ ...pdv(c), cnpj: string(c.cnpj, 'cnpj'), areaId: numeric(c.id_area, 'id_area'), hasSalesArea: flag(c.tem_area, 'tem_area'),
+        customers.push({ ...pdv(c), cnpj: string(c.cnpj, 'cnpj'), areaId: numeric(c.id_area, 'id_area'), hasSalesArea: customerAreaFlag(c),
           tableIds: links.filter(v => Number(v.id_cliente) === Number(c.id_cliente)).map(v => numeric(v.id_tabela, 'id_tabela vínculo')),
           distributors: list(distributorsRaw.distribuidores, 'distribuidores').map(d => ({
             id: numeric(d.id_distribuidor, 'id_distribuidor'), name: string(d.nome, 'nome distribuidor'), priority: numeric(d.prioridade, 'prioridade'),
