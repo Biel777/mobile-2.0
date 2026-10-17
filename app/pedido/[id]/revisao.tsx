@@ -1,3 +1,4 @@
+import { validateDistributorSelection } from '../../../src/domain/order-distributors';
 import { withSession } from '../../../src/components/require-session';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -32,17 +33,7 @@ function RevisaoScreen() {
     .map((distributorId) => customer.distributors.find((item) => item.id === distributorId))
     .filter((item): item is NonNullable<typeof item> => Boolean(item));
   const issues = validateOrder({ table, customer, lines: order.lines, coupon });
-  if (ordem.length === 0) {
-    issues.push({ code: 'NO_DIST', message: 'Monte a ordem de distribuidores.', blocking: true });
-  }
-  if (ordem.length > 6) {
-    issues.push({ code: 'MAX_DIST', message: 'A ordem aceita no máximo 6 distribuidores.', blocking: true });
-  }
-  ordem.forEach((item) => {
-    if (!order.prazos?.[item.id]) {
-      issues.push({ code: `NO_PRAZO_${item.id}`, message: `Escolha o prazo de ${item.name}.`, blocking: true });
-    }
-  });
+  issues.push(...validateDistributorSelection({ selected: order.distributorIds ?? [], prazos: order.prazos ?? {}, released: customer.distributors }));
   if (order.couponCode && !coupon) {
     issues.push({ code: 'COUPON', message: 'Cupom não confirmado. A validação é feita no envio.', blocking: true });
   }

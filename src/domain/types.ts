@@ -111,6 +111,7 @@ export type LocalOrder = {
   id: string;
   orderClientId: string;
   customerId: number;
+  customerName?: string;
   tableId: number;
   userId: number;
   createdAt: string;
@@ -158,6 +159,8 @@ export type SubOrder = {
 
 export type TrackedOrder = {
   id: number;
+  customerId?: number;
+  customerCnpj?: string;
   orderClientId: string;
   customerName: string;
   tableName: string;

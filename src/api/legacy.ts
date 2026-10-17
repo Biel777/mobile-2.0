@@ -231,7 +231,11 @@ export function createLegacyClient(options: LegacyClientOptions): SalesApiClient
       const result: TrackedOrder[] = ids.map(id => {
         const status = statusesRaw.find(p => Number(p.id) === id);
         if (!status) return incomplete(`status do pedido ${id} ausente`);
-        return { id, orderClientId: string(status.order_client_id, 'order_client_id'), customerName: string(status.nome_cliente, 'nome_cliente'), tableName: string(status.nome_tabela, 'nome_tabela'),
+        const firstSub = subs.find(sub => Number(sub.pedido_id) === id);
+        const customerId = status.id_cliente ?? firstSub?.id_cliente;
+        const customerCnpj = status.cnpj_cliente ?? firstSub?.cnpj_cliente;
+        return { id, customerId: customerId == null || customerId === '' ? undefined : numeric(customerId, 'id_cliente pedido'),
+          customerCnpj: customerCnpj == null || customerCnpj === '' ? undefined : string(customerCnpj, 'cnpj_cliente pedido'), orderClientId: string(status.order_client_id, 'order_client_id'), customerName: string(status.nome_cliente, 'nome_cliente'), tableName: string(status.nome_tabela, 'nome_tabela'),
           status: legacyStatus(status.status), prazo: numeric(status.prazo, 'prazo'), dataEnvio: status.data_envio || undefined, createdAt: string(status.datahora_criacao, 'datahora_criacao'),
           subOrders: subs.filter(s => Number(s.pedido_id) === id).map(s => {
             const subId = numeric(s.id_subpedido, 'id_subpedido'); const note = notes.find(n => Number(n.id_subpedido) === subId);

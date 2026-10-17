@@ -45,3 +45,10 @@ describe('validações de pedido', () => {
     expect(issues.some((issue) => issue.code === 'EMPTY')).toBe(true);
   });
 });
+
+it('bloqueia revisão por link direto quando o vínculo de área está ausente apesar da flag positiva', () => {
+  const issues = validateOrder({ table: fixtures.tables[0], customer: { ...fixtures.customers[0], hasSalesArea: true, areaId: 0 },
+    lines: [{ ean: '78910001', quantity: 120 }], now: new Date('2026-10-17T12:00:00Z') });
+  expect(issues.some(issue => issue.code === 'NO_AREA' && issue.blocking)).toBe(true);
+  expect(canSubmit(issues)).toBe(false);
+});

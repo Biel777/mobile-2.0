@@ -2,8 +2,10 @@ import { create } from 'zustand';
 import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware';
 import { createSalesApiClient, apiConfig } from '../api';
 import type { BootstrapData, Session, SalesApiClient } from '../api/client';
+import { getVisitCustomers, validVisitDate, type Visit } from '../domain/visits';
 import { quoteOrder } from '../domain/pricing';
 import { acceptanceNotice } from '../domain/notices';
+import { isAttention, reconcileOrderUpdates, type OrderUpdate } from '../domain/order-updates';
 import type { LocalOrder, StatusNotice, TrackedOrder } from '../domain/types';
 import { flushQueue } from '../sync/queue';
 import { emptyCatalog } from './catalog';
@@ -11,11 +13,15 @@ import { appStorage } from './storage';
 
 type AppState = {
   hydrated: boolean; online: boolean; session: Session | null; ownerId?: number;
-  catalog: BootstrapData; orders: LocalOrder[]; tracked: TrackedOrder[]; notices: StatusNotice[];
+  catalog: BootstrapData; orders: LocalOrder[]; tracked: TrackedOrder[]; notices: StatusNotice[]; orderUpdates: OrderUpdate[];
+  visits: Visit[];
+  addVisit: (customerId: number, date: string) => void; removeVisit: (customerId: number, date: string) => void;
+  setVisitCompleted: (customerId: number, date: string, completed: boolean) => void;
   lastSync?: string; syncError?: string; syncing: boolean; authRequired: boolean;
+  markOrderUpdateRead: (key: string) => void; reviewOrderUpdate: (key: string) => void; markAllOrderUpdatesRead: () => void;
   login: (login: string, password: string) => Promise<void>;
   logout: () => void; setOnline: (online: boolean) => void;
-  createDraft: (customerId: number, tableId: number) => string;
+  createDraft: (customerId: number, tableId: number, customerName?: string) => string;
   updateDraft: (id: string, patch: Partial<LocalOrder>) => void;
   enqueue: (id: string) => void; retryUncertain: (id: string) => void; flush: () => Promise<void>;
   refreshTracked: () => Promise<void>; pullUpdates: () => Promise<void>;
@@ -24,17 +30,48 @@ type AppState = {
 export function createAppStore(storage: StateStorage, suppliedClient?: SalesApiClient) {
   let generation = 0;
   let flushing = false;
-  const store = create<AppState>()(persist((set, get) => {
+  const store = create<AppState>()(persist((rawSet, get) => {
+    // Queue failures are observed even when the subsequent list request fails.
+    const set = (patch: Partial<AppState>) => {
+      const state = get();
+      if (patch.orders || patch.tracked) {
+        patch.orderUpdates = reconcileOrderUpdates(patch.orderUpdates ?? state.orderUpdates ?? [], patch.tracked ?? state.tracked,
+          patch.orders ?? state.orders, new Date().toISOString(), !state.lastSync);
+      }
+      rawSet(patch);
+    };
     const client = suppliedClient ?? createSalesApiClient({ ...apiConfig, getToken: () => get().session?.token, getSession: () => get().session });
     const fail = (error: unknown) => {
       const message = error instanceof Error ? error.message : 'Falha de sincronização';
       const expired = (error as { status?: number })?.status === 401;
       set({ syncError: message, ...(expired ? { authRequired: true } : {}) });
     };
+    const validateVisit = (customerId: number, date: string, requireCustomer = true) => {
+      const state = get();
+      if (!state.session || state.catalog.user.id !== state.session.userId) throw new Error('Entre e sincronize a carteira antes de organizar visitas.');
+      if (!validVisitDate(date)) throw new Error('Informe uma data de visita válida.');
+      if (requireCustomer && !getVisitCustomers(state.catalog).some(customer => customer.id === customerId)) throw new Error('Loja não encontrada na carteira.');
+    };
     const canSync = () => get().online && !!get().session?.token && !get().authRequired;
     return {
       hydrated: false, online: true, session: null, catalog: emptyCatalog,
-      orders: [], tracked: [], notices: [], syncing: false, authRequired: false,
+      orders: [], tracked: [], notices: [], orderUpdates: [], visits: [], syncing: false, authRequired: false,
+      addVisit(customerId, date) {
+        validateVisit(customerId, date);
+        if (!get().visits.some(visit => visit.customerId === customerId && visit.date === date)) set({ visits: [...get().visits, { customerId, date }] });
+      },
+      removeVisit(customerId, date) {
+        validateVisit(customerId, date, false);
+        set({ visits: get().visits.filter(visit => visit.customerId !== customerId || visit.date !== date) });
+      },
+      setVisitCompleted(customerId, date, completed) {
+        validateVisit(customerId, date);
+        if (!get().visits.some(visit => visit.customerId === customerId && visit.date === date)) throw new Error('Adicione a loja à agenda antes de concluir a visita.');
+        set({ visits: get().visits.map(visit => visit.customerId === customerId && visit.date === date ? { ...visit, completedAt: completed ? visit.completedAt ?? new Date().toISOString() : undefined } : visit) });
+      },
+      markOrderUpdateRead(key) { set({ orderUpdates: get().orderUpdates.map(update => update.key === key ? { ...update, readFingerprint: update.fingerprint } : update) }); },
+      reviewOrderUpdate(key) { set({ orderUpdates: get().orderUpdates.map(update => update.key === key ? { ...update, reviewedFingerprint: update.fingerprint, readFingerprint: update.fingerprint } : update) }); },
+      markAllOrderUpdatesRead() { set({ orderUpdates: get().orderUpdates.map(update => isAttention(update) ? update : ({ ...update, readFingerprint: update.fingerprint })) }); },
       async login(login, password) {
         const epoch = ++generation;
         set({ syncing: true, syncError: undefined });
@@ -44,7 +81,7 @@ export function createAppStore(storage: StateStorage, suppliedClient?: SalesApiC
           // Hide any previous account before loading authenticated data.
           const same = get().ownerId === session.userId;
           set({ session, authRequired: false, ...(same ? {} : {
-            ownerId: session.userId, catalog: emptyCatalog, orders: [], tracked: [], notices: [], lastSync: undefined,
+            ownerId: session.userId, catalog: emptyCatalog, orders: [], tracked: [], notices: [], orderUpdates: [], visits: [], lastSync: undefined,
           }) });
           const [catalog, tracked] = await Promise.all([client.getBootstrap(), client.listOrders()]);
           if (epoch !== generation) return;
@@ -66,11 +103,11 @@ export function createAppStore(storage: StateStorage, suppliedClient?: SalesApiC
         set({ online });
         if (reconnect && canSync()) void get().flush();
       },
-      createDraft(customerId, tableId) {
+      createDraft(customerId, tableId, customerName) {
         const { session, catalog } = get();
         if (!session || catalog.user.id !== session.userId) throw new Error('Entre e sincronize a carteira antes de digitar.');
         const id = `loc-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-        const order: LocalOrder = { id, orderClientId: id, customerId, tableId, userId: session.userId,
+        const order: LocalOrder = { id, orderClientId: id, customerId, customerName: customerName ?? catalog.customers.find(item => item.id === customerId)?.name, tableId, userId: session.userId,
           createdAt: new Date().toISOString(), distributorIds: [], prazos: {}, lines: [], localStatus: 7 };
         set({ orders: [order, ...get().orders] });
         return id;
@@ -182,11 +219,13 @@ export function createAppStore(storage: StateStorage, suppliedClient?: SalesApiC
     name: `forca-vendas-v5-${apiConfig.mode}-${apiConfig.protocol}-${apiConfig.baseUrl}`,
     storage: createJSONStorage(() => storage),
     partialize: state => ({ session: state.session, ownerId: state.ownerId, catalog: state.catalog,
-      orders: state.orders, tracked: state.tracked, notices: state.notices, lastSync: state.lastSync }),
+      orders: state.orders, tracked: state.tracked, notices: state.notices, orderUpdates: state.orderUpdates, visits: state.visits, lastSync: state.lastSync }),
     onRehydrateStorage: () => (state, error) => {
       if (error) queueMicrotask(() => store.setState({ hydrated: true, session: null, syncError: 'Não foi possível carregar a sessão local. Entre novamente.' }));
       if (state) {
         state.orders = state.orders.map(order => order.queueStatus === 'sending' ? { ...order, queueStatus: 'failed', deliveryUncertain: true } : order);
+        state.orderUpdates = reconcileOrderUpdates(state.orderUpdates ?? [], state.tracked, state.orders, state.lastSync ?? new Date().toISOString(), true);
+        state.visits = Array.isArray(state.visits) ? state.visits.filter(visit => Number.isInteger(visit.customerId) && validVisitDate(visit.date)) : [];
         state.authRequired = !!state.session && !state.session.token;
         state.hydrated = true;
       }

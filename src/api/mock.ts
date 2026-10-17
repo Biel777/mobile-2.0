@@ -56,6 +56,7 @@ const client: SalesApiClient = {
       remote.unshift({
         id: partId,
         orderClientId: partIndex === 0 ? payload.order_client_id : `${payload.order_client_id}-${partIndex + 1}`,
+        customerId: customer.id, customerCnpj: customer.cnpj,
         customerName: customer.name,
         tableName: table.name,
         status,

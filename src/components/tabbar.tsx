@@ -31,7 +31,7 @@ export function TabBar() {
             style={styles.tab}
             onPress={() => router.replace(tab.href)}
           >
-            <Icon color={color} />
+            <Icon color={color} size={24} />
             <View style={[styles.mark, on && styles.markOn]} />
           </Pressable>
         );

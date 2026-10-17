@@ -1,14 +1,19 @@
+import { AppIcon } from '../../src/components/icons';
+import { OrderUpdateHistory } from '../../src/components/order-updates';
 import { withSession } from '../../src/components/require-session';
 import { apiConfig } from '../../src/api';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { ProductFace } from '../../src/components/product-face';
 import { Banner, Card, GhostButton, PrimaryButton } from '../../src/components/ui';
 import { useAppStore } from '../../src/data/store';
 import { money, quoteOrder } from '../../src/domain/pricing';
+import { isPortfolioCustomer } from '../../src/domain/portfolio';
 import { MAX_DISTRIBUTORS } from '../../src/domain/types';
 import { colors, fonts, radius, space } from '../../src/theme';
+
+const displayDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value) ? value.split('-').reverse().join('/') : value;
 
 const STEPS = ['Cliente', 'Condição', 'Distribuidores', 'Produtos'];
 
@@ -20,6 +25,8 @@ function stepFromParam(value: string | string[] | undefined): number {
 }
 
 function PedidoScreen() {
+  const scroll = useRef<ScrollView>(null);
+  const [openDeadline, setOpenDeadline] = useState<number | null>(null);
   const [retryConfirmed, setRetryConfirmed] = useState(false);
   const retryUncertain = useAppStore(state => state.retryUncertain);
   const catalog = useAppStore((state) => state.catalog);
@@ -27,12 +34,24 @@ function PedidoScreen() {
   const order = useAppStore((state) => state.orders.find((item) => item.id === id));
   const flush = useAppStore(state => state.flush);
   const refreshTracked = useAppStore(state => state.refreshTracked);
+  const pullUpdates = useAppStore(state => state.pullUpdates);
+  const syncing = useAppStore(state => state.syncing);
+  const online = useAppStore(state => state.online);
   const updateDraft = useAppStore((state) => state.updateDraft);
   const [step, setStep] = useState(() => stepFromParam(stepParam));
+
+  useEffect(() => { scroll.current?.scrollTo({ y: 0, animated: false }); setOpenDeadline(null); }, [step]);
 
   useEffect(() => {
     setStep(stepFromParam(stepParam));
   }, [stepParam]);
+
+  useEffect(() => {
+    if (!order || order.tableId !== 0) return;
+    const customer = catalog.customers.find(item => item.id === order.customerId);
+    const tableId = customer?.tableIds.find(id => catalog.tables.some(table => table.id === id));
+    if (tableId) updateDraft(order.id, { tableId });
+  }, [catalog, order?.id, order?.tableId, updateDraft]);
 
   if (!order) {
     return null;
@@ -49,19 +68,35 @@ function PedidoScreen() {
           onPress={() => { if (retryConfirmed) { retryUncertain(order.id); setRetryConfirmed(false); } else setRetryConfirmed(true); }} />
       </> : null}
       <GhostButton title="Ver acompanhamento" onPress={() => router.push('/pedidos')} />
-    </ScrollView></View>;
+    <OrderUpdateHistory localOrderId={order.id} />
+      </ScrollView></View>;
   }
 
   const customer = catalog.customers.find((item) => item.id === order.customerId);
   const tables = catalog.tables.filter((table) => customer?.tableIds.includes(table.id));
-  const table = catalog.tables.find((item) => item.id === order.tableId) ?? tables[0];
+  const table = tables.find((item) => item.id === order.tableId);
+  if (!customer || !isPortfolioCustomer(customer) || !tables.length) {
+    const message = !customer ? 'O cadastro desta loja ainda não foi carregado. Sincronize para consultar as condições comerciais.'
+      : !isPortfolioCustomer(customer) ? 'Esta loja não está mais disponível na sua carteira. Atualize os dados para escolher uma loja liberada.'
+      : 'Nenhuma condição comercial está disponível para esta loja. Sincronize para atualizar as liberações.';
+    return <View style={styles.screen}><ScrollView contentContainerStyle={styles.content}>
+      <Text style={styles.title}>{customer?.name ?? order.customerName ?? 'Loja selecionada'}</Text>
+      <Banner text={message} />
+      {!online ? <Banner text="Sem conexão. Você pode retomar este rascunho quando os dados da loja estiverem disponíveis." /> : null}
+      <PrimaryButton title={syncing ? 'Sincronizando…' : 'Sincronizar dados da loja'} disabled={syncing || !online}
+        onPress={() => { void pullUpdates(); }} />
+      <GhostButton title="Voltar para as lojas" onPress={() => router.push('/positivacao')} />
+    <OrderUpdateHistory localOrderId={order.id} />
+      </ScrollView></View>;
+  }
+
   const coupon = catalog.coupons.find((item) => item.code === order.couponCode);
   const quote = table ? quoteOrder(table, order.lines, coupon) : undefined;
   const selected = order.distributorIds ?? [];
   const prazos = order.prazos ?? {};
   const released = customer?.distributors ?? [];
-  const prazosOk = selected.length > 0 && selected.every((distributorId) => prazos[distributorId]);
-  const canNext = step === 1 || (step === 2 && selected.length <= MAX_DISTRIBUTORS && prazosOk);
+  const prazosOk = selected.length > 0 && selected.every(id => released.find(item => item.id === id)?.prazos.includes(prazos[id]));
+  const canNext = (step === 1 && !!table) || (step === 2 && selected.length <= MAX_DISTRIBUTORS && prazosOk);
 
   function move(distributorId: number, direction: -1 | 1) {
     const index = selected.indexOf(distributorId);
@@ -75,7 +110,7 @@ function PedidoScreen() {
 
   return (
     <View style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView ref={scroll} contentContainerStyle={styles.content}>
         <Text style={styles.kicker}>{customer?.name}</Text>
         <View style={styles.steps}>
           {STEPS.map((label, index) => {
@@ -85,13 +120,16 @@ function PedidoScreen() {
               <Pressable
                 key={label}
                 style={styles.stepNav}
+                accessibilityRole="button"
+                accessibilityLabel={`Etapa ${index + 1} de ${STEPS.length}: ${label}${active ? ", atual" : ""}`}
+                accessibilityState={{ selected: active, disabled: !done }}
                 disabled={!done}
                 onPress={() => setStep(index)}
               >
-                <View style={[styles.dot, (active || index < step) && styles.dotOn]}>
-                  <Text style={[styles.dotText, (active || index < step) && styles.dotTextOn]}>{index + 1}</Text>
+                <View style={[styles.dot, index < step && styles.dotDone, active && styles.dotOn]}>
+                  {index < step ? <AppIcon name="check" size={14} color={colors.teal} /> : <Text style={[styles.dotText, active && styles.dotTextOn]}>{index + 1}</Text>}
                 </View>
-                <Text style={[styles.stepLabel, active && styles.stepLabelOn]}>{label}</Text>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[styles.stepLabel, active && styles.stepLabelOn]}>{label}</Text>
               </Pressable>
             );
           })}
@@ -100,29 +138,21 @@ function PedidoScreen() {
         {step === 1 ? (
           <>
             <Text style={styles.title}>Condição comercial</Text>
-            <Text style={styles.help}>Escolha a tabela vigente. O prazo é definido depois, em cada distribuidor.</Text>
+            <Text style={styles.help}>Escolha a condição para este pedido. Os prazos serão definidos com os distribuidores.</Text>
             {tables.map((item) => {
               const on = item.id === table?.id;
               return (
-                <Pressable key={item.id} onPress={() => updateDraft(order.id, { tableId: item.id, lines: [] })}>
-                  <View style={[styles.option, on && styles.optionOn]}>
-                    <Text style={styles.name}>{item.name}</Text>
-                    <Text style={styles.meta}>
-                      Mínimo {money(item.minValue)}
-                      {item.monthBilledNet ? ` · ${money(item.monthBilledNet)} já no mês` : ''} · até {item.expiresAt}
-                    </Text>
+                <Pressable key={item.id} accessibilityRole="radio" accessibilityState={{ checked: on }} accessibilityLabel={`${item.name}. Mínimo ${money(item.minValue)} ${item.minValueBasis === 'GROSS' ? 'bruto' : 'líquido'}. Validade ${displayDate(item.expiresAt)}.`} onPress={() => { if (item.id !== order.tableId) updateDraft(order.id, { tableId: item.id, lines: [] }); }} style={[styles.option, on && styles.optionOn]}>
+                  <View style={styles.optionHeading}><Text style={[styles.name, { flex: 1 }]}>{item.name}</Text><View style={[styles.radio, on && styles.radioOn]}>{on ? <View style={styles.radioDot} /> : null}</View></View>
+                  <View style={styles.conditionFacts}>
+                    <View style={styles.fact}><Text style={styles.factLabel}>Mínimo {item.minValueBasis === 'GROSS' ? 'bruto' : 'líquido'}</Text><Text style={styles.factValue}>{money(item.minValue)}</Text></View>
+                    {item.monthBilledNet != null && item.monthBilledNet > 0 ? <View style={styles.fact}><Text style={styles.factLabel}>Faturado no mês</Text><Text style={styles.factValue}>{money(item.monthBilledNet)}</Text></View> : null}
                   </View>
+                  <View style={styles.validity}><AppIcon name="calendar" size={14} color={colors.muted} /><Text style={styles.factLabel}>Válida até {displayDate(item.expiresAt)}</Text></View>
                 </Pressable>
               );
             })}
-            <View style={[styles.option, styles.disabled]}>
-              <Text style={styles.name}>Pedido negociado</Text>
-              <Text style={styles.meta}>
-                {catalog.user.bloqueiaNegociado
-                  ? 'Seu grupo não digita pedido sem tabela. Escolha uma condição comercial.'
-                  : 'Disponível para este usuário.'}
-              </Text>
-            </View>
+
           </>
         ) : null}
 
@@ -130,48 +160,36 @@ function PedidoScreen() {
           <>
             <Text style={styles.title}>Ordem de distribuidores</Text>
             <Text style={styles.help}>
-              Até {MAX_DISTRIBUTORS} da lista liberada. A posição 1 recebe primeiro. O prazo é do distribuidor.
+              Escolha até {MAX_DISTRIBUTORS}. O primeiro da lista recebe o pedido antes dos demais.
             </Text>
             <Text style={styles.section}>
               Ordem de envio ({selected.length}/{MAX_DISTRIBUTORS})
             </Text>
-            {selected.length === 0 ? <Text style={styles.meta}>Toque em um liberado para incluir.</Text> : null}
+            {selected.length === 0 ? <Text style={styles.meta}>Adicione um distribuidor da lista abaixo e escolha o prazo.</Text> : null}
             {selected.map((distributorId, index) => {
               const item = released.find((entry) => entry.id === distributorId);
               return (
-                <View key={distributorId} style={styles.option}>
-                  <Text style={styles.name}>
-                    {index + 1}. {item?.name}
-                  </Text>
-                  <Text style={styles.meta}>Prazo deste distribuidor</Text>
-                  <View style={styles.row}>
-                    {(item?.prazos ?? []).map((days) => (
-                      <Pressable key={days} onPress={() => updateDraft(order.id, { prazos: { ...prazos, [distributorId]: days } })}>
-                        <Text style={[styles.chip, prazos[distributorId] === days && styles.chipOn]}>{days} dias</Text>
-                      </Pressable>
-                    ))}
+                <View key={distributorId} style={styles.distributorCard}>
+                  <View style={styles.distributorHead}>
+                    <View style={styles.priority}><Text style={styles.priorityText}>{index + 1}</Text></View>
+                    <Text style={[styles.name, { flex: 1 }]}>{item?.name ?? 'Distribuidor indisponível'}</Text>
+                    <Pressable accessibilityRole="button" accessibilityLabel={`Remover ${item?.name ?? 'distribuidor'} da ordem de envio`} style={styles.iconAction} onPress={() => {
+                      const next = { ...prazos }; delete next[distributorId];
+                      updateDraft(order.id, { distributorIds: selected.filter(entry => entry !== distributorId), prazos: next });
+                      if (openDeadline === distributorId) setOpenDeadline(null);
+                    }}><AppIcon name="x" color={colors.muted} size={18} /></Pressable>
                   </View>
-                  <View style={styles.actions}>
-                    <Pressable style={styles.action} onPress={() => move(distributorId, -1)}>
-                      <Text style={styles.actionText}>Subir</Text>
+                  <View style={styles.distributorTools}>
+                    <Pressable accessibilityRole="button" accessibilityState={{ expanded: openDeadline === distributorId }} accessibilityLabel={`Prazo de ${item?.name ?? 'distribuidor'}: ${item?.prazos.includes(prazos[distributorId]) ? `${prazos[distributorId]} dias` : 'escolher'}`} onPress={() => setOpenDeadline(openDeadline === distributorId ? null : distributorId)} style={styles.deadline}>
+                      <Text style={styles.factLabel}>Prazo</Text><Text style={styles.deadlineValue}>{item?.prazos.includes(prazos[distributorId]) ? `${prazos[distributorId]} dias` : 'Escolher'}</Text><AppIcon name={openDeadline === distributorId ? 'chevron-up' : 'chevron-down'} color={colors.teal} size={16} />
                     </Pressable>
-                    <Pressable style={styles.action} onPress={() => move(distributorId, 1)}>
-                      <Text style={styles.actionText}>Descer</Text>
-                    </Pressable>
-                    <Pressable
-                      style={styles.action}
-                      onPress={() => {
-                        const next = { ...prazos };
-                        delete next[distributorId];
-                        updateDraft(order.id, {
-                          distributorIds: selected.filter((entry) => entry !== distributorId),
-                          prazos: next,
-                        });
-                      }}
-                    >
-                      <Text style={styles.actionText}>Remover</Text>
-                    </Pressable>
+                    <Pressable accessibilityRole="button" accessibilityLabel={`Aumentar prioridade de ${item?.name ?? 'distribuidor'}`} accessibilityState={{ disabled: index === 0 }} disabled={index === 0} style={[styles.iconAction, index === 0 && styles.disabled]} onPress={() => move(distributorId, -1)}><AppIcon name="arrow-up" size={18} color={colors.ink} /></Pressable>
+                    <Pressable accessibilityRole="button" accessibilityLabel={`Diminuir prioridade de ${item?.name ?? 'distribuidor'}`} accessibilityState={{ disabled: index === selected.length - 1 }} disabled={index === selected.length - 1} style={[styles.iconAction, index === selected.length - 1 && styles.disabled]} onPress={() => move(distributorId, 1)}><AppIcon name="arrow-down" size={18} color={colors.ink} /></Pressable>
                   </View>
+                  {openDeadline === distributorId ? <View style={styles.deadlineOptions} accessibilityRole="radiogroup" accessibilityLabel={`Prazos de ${item?.name}`}>
+                    {(item?.prazos ?? []).map(days => <Pressable key={days} accessibilityRole="radio" accessibilityState={{ checked: prazos[distributorId] === days }} accessibilityLabel={`${days} dias para ${item?.name}`} onPress={() => { updateDraft(order.id, { prazos: { ...prazos, [distributorId]: days } }); setOpenDeadline(null); }} style={[styles.deadlineChoice, prazos[distributorId] === days && styles.deadlineChoiceOn]}><Text style={styles.deadlineValue}>{days} dias</Text>{prazos[distributorId] === days ? <AppIcon name="check" size={14} color={colors.teal} /> : null}</Pressable>)}
+                    {!item?.prazos.length ? <Text style={styles.factLabel}>Nenhum prazo disponível. Atualize os dados.</Text> : null}
+                  </View> : null}
                 </View>
               );
             })}
@@ -181,17 +199,10 @@ function PedidoScreen() {
               .map((item) => {
                 const full = selected.length >= MAX_DISTRIBUTORS;
                 return (
-                  <Pressable
-                    key={item.id}
-                    disabled={full}
-                    onPress={() => updateDraft(order.id, { distributorIds: [...selected, item.id] })}
-                  >
-                    <View style={[styles.option, full && styles.disabled]}>
-                      <Text style={styles.name}>{item.name}</Text>
-                      <Text style={styles.meta}>
-                        {full ? 'Limite de 6 atingido' : `Prazos ${item.prazos.join(', ')} dias · incluir`}
-                      </Text>
-                    </View>
+                  <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={`Adicionar ${item.name} à ordem de envio`} accessibilityState={{ disabled: full }} disabled={full}
+                    onPress={() => { updateDraft(order.id, { distributorIds: [...selected, item.id] }); setOpenDeadline(item.id); }} style={[styles.available, full && styles.disabled]}>
+                    <View style={{ flex: 1 }}><Text style={styles.name}>{item.name}</Text><Text style={styles.factLabel}>{full ? 'Limite de 6 atingido' : `Prazos de ${item.prazos.join(', ')} dias`}</Text></View>
+                    <AppIcon name="plus-circle" size={22} color={colors.teal} />
                   </Pressable>
                 );
               })}
@@ -316,7 +327,7 @@ function PedidoScreen() {
                         style={styles.stepBtn}
                         onPress={() => setQty(Math.max(0, qty - product.packSize))}
                       >
-                        <Text style={styles.stepBtnText}>−</Text>
+                        <AppIcon name="minus" color={colors.teal} size={20} />
                       </Pressable>
                       <TextInput
                         accessibilityLabel={`Quantidade ${product.name}`}
@@ -332,7 +343,7 @@ function PedidoScreen() {
                         style={styles.stepBtn}
                         onPress={() => setQty(qty + product.packSize)}
                       >
-                        <Text style={styles.stepBtnText}>+</Text>
+                        <AppIcon name="plus" color={colors.teal} size={20} />
                       </Pressable>
                     </View>
                     {line ? (
@@ -346,9 +357,11 @@ function PedidoScreen() {
             })}
           </>
         ) : null}
+      <OrderUpdateHistory localOrderId={order.id} />
       </ScrollView>
 
       <View style={styles.footer}>
+        {step === 2 && !prazosOk ? <Text style={styles.footerHint}>{selected.length ? 'Escolha o prazo de cada distribuidor para avançar.' : 'Adicione um distribuidor para avançar.'}</Text> : null}
         {step === 3 && quote && table ? (
           <View style={styles.footerFacts}>
             <Text style={styles.footerNet}>Líquido {money(quote.net)}</Text>
@@ -370,7 +383,7 @@ function PedidoScreen() {
           ) : null}
           <View style={styles.footerMain}>
             {step < 3 ? (
-              <PrimaryButton title="Continuar" disabled={!canNext} onPress={() => setStep(step + 1)} />
+              <PrimaryButton title={step === 1 ? "Ver distribuidores" : "Escolher produtos"} disabled={!canNext} onPress={() => setStep(step + 1)} />
             ) : (
               <PrimaryButton title="Revisar pedido" onPress={() => router.push(`/pedido/${order.id}/revisao`)} />
             )}
@@ -405,20 +418,21 @@ const styles = StyleSheet.create({
   tierUnits: { fontFamily: fonts.bodyStrong, fontSize: 13, color: colors.ink },
   tierPct: { fontFamily: fonts.bodyStrong, fontSize: 12, color: colors.teal },
   mechLine: { color: colors.text, fontFamily: fonts.body, fontSize: 13 },
-  steps: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: space.md },
-  stepNav: { alignItems: 'center', flex: 1 },
+  steps: { flexDirection: 'row', alignItems: 'flex-start', marginTop: 12, marginBottom: 20 },
+  stepNav: { alignItems: 'center', flex: 1, minWidth: 0, minHeight: 48 },
   dot: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     backgroundColor: colors.lineSoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  dotDone: { backgroundColor: colors.mint },
   dotOn: { backgroundColor: colors.ink },
   dotText: { color: colors.text, fontFamily: fonts.bodyStrong, fontSize: 12 },
   dotTextOn: { color: colors.onPrimary },
-  stepLabel: { marginTop: 4, fontSize: 11, color: colors.muted, fontFamily: fonts.body, textAlign: 'center' },
+  stepLabel: { width: '100%', lineHeight: 16, marginTop: 6, fontSize: 10, color: colors.muted, fontFamily: fonts.body, textAlign: 'center' },
   stepLabelOn: { color: colors.ink, fontFamily: fonts.bodyStrong },
   kicker: { color: colors.teal, fontFamily: fonts.bodyStrong, fontSize: 12 },
   title: { fontSize: 22, fontFamily: fonts.displayBold, color: colors.ink, marginBottom: 4 },
@@ -434,34 +448,28 @@ const styles = StyleSheet.create({
     padding: space.md,
     marginBottom: space.sm,
   },
-  optionOn: { borderColor: colors.teal, backgroundColor: colors.greenSoft },
+  optionOn: { borderColor: colors.teal, backgroundColor: colors.card },
   disabled: { opacity: 0.55 },
-  row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
-  chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: radius.full,
-    backgroundColor: colors.page,
-    borderWidth: 1,
-    borderColor: colors.line,
-    color: colors.ink,
-    fontFamily: fonts.bodyStrong,
-    overflow: 'hidden',
-    minHeight: 44,
-  },
-  chipOn: { backgroundColor: colors.ink, borderColor: colors.ink, color: colors.onPrimary },
-  actions: { flexDirection: 'row', gap: 8, marginTop: 12 },
-  action: {
-    flex: 1,
-    minHeight: 44,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.line,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.page,
-  },
-  actionText: { color: colors.ink, fontFamily: fonts.bodyStrong, fontSize: 13 },
+  optionHeading: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  radio: { width: 20, height: 20, borderRadius: 10, borderWidth: 1, borderColor: colors.line, alignItems: 'center', justifyContent: 'center' },
+  radioOn: { borderColor: colors.teal }, radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.teal },
+  conditionFacts: { flexDirection: 'row', flexWrap: 'wrap', gap: 16, marginTop: 16, marginBottom: 12 },
+  fact: { flex: 1, minWidth: 110 }, factLabel: { color: colors.muted, fontFamily: fonts.body, fontSize: 12, lineHeight: 18 },
+  factValue: { color: colors.ink, fontFamily: fonts.bodyStrong, fontSize: 16, marginTop: 3 },
+  validity: { flexDirection: 'row', alignItems: 'center', gap: 6, borderTopWidth: 1, borderTopColor: colors.lineSoft, paddingTop: 10 },
+  distributorCard: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.lineSoft, borderRadius: radius.lg, padding: 12, marginBottom: 8 },
+  distributorHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  priority: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.mint },
+  priorityText: { fontFamily: fonts.bodyStrong, fontSize: 12, color: colors.tealPressed },
+  distributorTools: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
+  iconAction: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: radius.md },
+  deadline: { flex: 1, minWidth: 0, minHeight: 44, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6, paddingHorizontal: 8, borderRadius: radius.md, backgroundColor: colors.page },
+  deadlineValue: { fontFamily: fonts.bodyStrong, color: colors.ink, fontSize: 12 },
+  deadlineOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, borderTopWidth: 1, borderTopColor: colors.lineSoft, paddingTop: 8, marginTop: 8 },
+  deadlineChoice: { minHeight: 44, minWidth: 64, paddingHorizontal: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, borderRadius: radius.md },
+  deadlineChoiceOn: { backgroundColor: colors.mint },
+  available: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.lineSoft, borderRadius: radius.lg, padding: 16, marginBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  footerHint: { fontFamily: fonts.body, color: colors.muted, fontSize: 12, lineHeight: 18 },
   qtyRow: {
     marginTop: 12,
     flexDirection: 'row',
@@ -483,7 +491,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  stepBtnText: { color: colors.teal, fontSize: 22, fontFamily: fonts.displayBold },
   coupon: {
     marginTop: 8,
     borderWidth: 1,
@@ -518,8 +525,8 @@ const styles = StyleSheet.create({
   footerNet: { fontFamily: fonts.displayBold, fontSize: 18, color: colors.ink },
   footerGap: { fontFamily: fonts.body, color: colors.text, marginTop: 2 },
   footerButtons: { flexDirection: 'row', gap: 8 },
-  footerSide: { flex: 1 },
-  footerMain: { flex: 1.4 },
+  footerSide: { width: 84 },
+  footerMain: { flex: 1, minWidth: 0 },
 });
 
 export default withSession(PedidoScreen);

@@ -1,3 +1,6 @@
+import { OrderUpdateHistory } from '../../src/components/order-updates';
+import { getOrderProgress } from '../../src/domain/order-progress';
+import { OrderProgress } from '../../src/components/order-progress';
 import { withSession } from '../../src/components/require-session';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -25,7 +28,7 @@ function PedidoDetalheScreen() {
   }
 
   const subs = order.subOrders ?? [];
-  const waiting = subs.some((sub) => !sub.invoice);
+  const waiting = !getOrderProgress(order).completed;
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
@@ -35,6 +38,7 @@ function PedidoDetalheScreen() {
       <Text style={styles.kicker}>Pedido {order.id}</Text>
       <Text style={styles.title}>{order.customerName}</Text>
       <Text style={styles.meta}>{order.tableName}</Text>
+      <View style={{ marginTop: space.md }}><OrderProgress order={order} /></View>
       {order.status === 14 ? (
         <Pressable onPress={() => router.push('/bandeira')}>
           <Banner text="Aguardando o mínimo da bandeira. Toque para ver a cesta do grupo." />
@@ -86,12 +90,14 @@ function PedidoDetalheScreen() {
                   </Text>
                 </Pressable>
               ) : (
-                <Text style={styles.meta}>Aguardando nota fiscal</Text>
+                <Text style={styles.meta}>{[6, 11, 12].includes(sub.status) ? 'Tentativa encerrada sem nota fiscal' : [1, 5, 10].includes(sub.status) && sub.items.some(item => item.quantEsp > 0) ? 'Aguardando nota fiscal' : 'Nota fiscal ainda não disponível'}</Text>
               )}
             </Card>
           </View>
         );
       })}
+
+      <OrderUpdateHistory orderId={order.id} />
 
       {waiting ? (
         <PrimaryButton

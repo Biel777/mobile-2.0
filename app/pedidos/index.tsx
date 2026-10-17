@@ -38,7 +38,7 @@ function PedidosScreen() {
             <View style={{ marginBottom: space.sm }}>
               <Card>
                 <Text style={styles.pill}>{order.queueStatus === 'sending' ? 'Enviando…' : order.queueStatus === 'pending' ? 'Na fila' : order.queueStatus === 'failed' ? 'Falha no envio' : order.queueStatus === 'sent' ? 'Enviado' : statusLabel(order.localStatus)}</Text>
-                <Text style={styles.name}>{customer?.name}</Text>
+                <Text style={styles.name}>{customer?.name ?? order.customerName ?? 'Loja selecionada'}</Text>
                 <Text style={styles.meta}>
                   {table?.name ?? 'Sem condição'} · {ordem} distribuidor(es)
                 </Text>

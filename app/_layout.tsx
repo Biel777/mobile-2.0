@@ -1,3 +1,4 @@
+import Feather from '@expo/vector-icons/Feather';
 import { Stack, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
@@ -20,6 +21,7 @@ export default function Layout() {
   const online = useAppStore(state => state.online);
   const setOnline = useAppStore((state) => state.setOnline);
   const [ready] = useFonts({
+    ...Feather.font,
     Outfit_500Medium: require('../assets/fonts/Outfit-Medium.ttf'),
     Outfit_700Bold: require('../assets/fonts/Outfit-Bold.ttf'),
     Inter_400Regular: require('../assets/fonts/Inter-Regular.ttf'),
@@ -70,6 +72,9 @@ export default function Layout() {
         <Stack.Screen name="pedidos/index" options={{ title: 'Acompanhamento' }} />
         <Stack.Screen name="pedidos/[id]" options={{ title: 'Pedido' }} />
         <Stack.Screen name="nota/[orderId]/[subId]" options={{ title: 'Nota fiscal' }} />
+        <Stack.Screen name="visitas" options={{ title: 'Visitas de hoje' }} />
+        <Stack.Screen name="visita" options={{ title: 'Resumo do cliente' }} />
+        <Stack.Screen name="atualizacoes" options={{ title: 'Atualizações dos pedidos' }} />
         <Stack.Screen name="metas" options={{ title: 'Metas' }} />
         <Stack.Screen name="positivacao" options={{ title: 'Positivação' }} />
         <Stack.Screen name="bandeira" options={{ title: 'Bandeira' }} />

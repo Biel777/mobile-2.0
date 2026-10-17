@@ -254,6 +254,7 @@ const tracked: TrackedOrder[] = [
   {
     id: 8801,
     orderClientId: 'seed-8801',
+    customerId: 11, customerCnpj: '12.345.678/0001-90',
     customerName: 'Drogaria Central Ltda',
     tableName: regular.name,
     status: 10,
@@ -302,6 +303,7 @@ const tracked: TrackedOrder[] = [
   {
     id: 8803,
     orderClientId: 'seed-8803',
+    customerId: 11, customerCnpj: '12.345.678/0001-90',
     customerName: 'Drogaria Central Ltda',
     tableName: campaign.name,
     status: 3,
@@ -331,6 +333,7 @@ const tracked: TrackedOrder[] = [
   {
     id: 8814,
     orderClientId: 'seed-8814',
+    customerId: 11, customerCnpj: '12.345.678/0001-90',
     customerName: 'Drogaria Central Ltda',
     tableName: regular.name,
     status: 14,
@@ -359,6 +362,7 @@ const tracked: TrackedOrder[] = [
   {
     id: 8804,
     orderClientId: 'seed-8804',
+    customerId: 22, customerCnpj: '98.765.432/0001-10',
     customerName: 'Farmácia São José',
     tableName: combo.name,
     status: 4,

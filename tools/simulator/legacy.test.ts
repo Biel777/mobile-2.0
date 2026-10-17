@@ -38,6 +38,8 @@ describe('Legacy forms reais contra amostras sintéticas', () => {
     expect(sent.get('ordem_envio[0][codigo_faturamento]')).toBe('CF-501-21'); expect(sent.get('ordem_envio[0][prazo]')).toBeNull();
     expect(sent.get('produtos[0][desconto]')).toBe('25');
     const tracked = await client.listOrders();
+    expect(tracked.find(order => order.orderClientId === body.order_client_id)).toMatchObject({ customerId: 11, customerCnpj: '12.345.678/0001-90' });
+    expect(tracked.find(order => order.id === 8804)).toMatchObject({ customerId: 22, customerCnpj: '98.765.432/0001-10' });
     expect(tracked.filter(o => o.orderClientId === body.order_client_id)).toHaveLength(1);
     expect(tracked.find(o => o.id === 8814)?.status).toBe(14);
     await fetch(base + '/__sim/orders/transition', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.token}` }, body: JSON.stringify({ orderClientId: body.order_client_id, action: 'invoice' }) });

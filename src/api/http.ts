@@ -59,7 +59,7 @@ const bootstrapCheck = object({
   })),
 });
 const ordersCheck = array(object({
-  id: num, orderClientId: text, customerName: str, tableName: str, status: num, prazo: num,
+  id: num, customerId: optional(num), customerCnpj: optional(str), orderClientId: text, customerName: str, tableName: str, status: num, prazo: num,
   dataEnvio: optional(str), createdAt: str,
   subOrders: array(object({
     id: num, distributorName: str, status: num, prazo: num,

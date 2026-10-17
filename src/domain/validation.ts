@@ -1,3 +1,4 @@
+import { isPortfolioCustomer } from './portfolio';
 import { comboShare, findProduct, quoteOrder } from './pricing';
 import type {
   CommercialTable,
@@ -56,7 +57,7 @@ export function validateOrder(input: {
   const { table, customer, lines, coupon, now = new Date() } = input;
   const issues: ValidationIssue[] = [];
 
-  if (!customer.hasSalesArea) {
+  if (!isPortfolioCustomer(customer)) {
     issues.push({
       code: 'NO_AREA',
       message: 'PDV sem área Legacy cadastrada.',

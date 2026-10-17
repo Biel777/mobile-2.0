@@ -1,3 +1,7 @@
+import { filterPortfolioRefs } from '../src/domain/portfolio';
+import { VisitsSummary } from '../src/components/visits';
+import { OrderUpdatesSummary } from '../src/components/order-updates';
+import { startOrderForPdv } from '../src/data/order-entry';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -16,9 +20,7 @@ export default function HomeScreen() {
   const online = useAppStore((state) => state.online);
   const lastSync = useAppStore((state) => state.lastSync);
   const orders = useAppStore((state) => state.orders);
-  const notices = useAppStore((state) => state.notices);
   const login = useAppStore((state) => state.login);
-  const createDraft = useAppStore((state) => state.createDraft);
   const [user, setUser] = useState('marina');
   const [password, setPassword] = useState('campo123');
   const [error, setError] = useState('');
@@ -56,7 +58,7 @@ export default function HomeScreen() {
   const pct = attainment(goals.metaValor, goals.realizadoValor);
   const missing = gap(goals.metaValor, goals.realizadoValor);
   const queued = orders.filter((order) => order.queueStatus === 'pending' || order.queueStatus === 'failed').length;
-  const pdvGap = goals.pdvsSemPositivar;
+  const pdvGap = filterPortfolioRefs(goals.pdvsSemPositivar, catalog.customers);
 
   const openFamilies = catalog.flags.reduce(
     (sum, flag) => sum + flag.families.filter((item) => item.billedNet < item.minNet).length,
@@ -82,6 +84,8 @@ export default function HomeScreen() {
             : 'Sem sincronização'}
         </Text>
 
+        <VisitsSummary />
+
         <Pressable onPress={() => router.push('/metas')}>
           <Card>
             <Text style={styles.heroLabel}>Falta no ciclo</Text>
@@ -97,13 +101,7 @@ export default function HomeScreen() {
           </Card>
         </Pressable>
 
-        {(notices ?? []).slice(0, 2).map((notice) => (
-          <Pressable key={notice.id} onPress={() => router.push(`/pedidos/${notice.orderId}`)}>
-            <View style={{ marginTop: space.sm }}>
-              <Banner tone="good" text={notice.text} />
-            </View>
-          </Pressable>
-        ))}
+        <OrderUpdatesSummary />
 
         <Pressable onPress={() => router.push('/bandeira')} style={{ marginTop: space.sm }}>
           <Card>
@@ -119,29 +117,20 @@ export default function HomeScreen() {
           {pdvGap.length} PDV{pdvGap.length === 1 ? '' : 's'} sem faturamento
         </Text>
         {pdvGap.map((pdv) => {
-          const canOrder = catalog.customers.some(
-            (item) => item.id === pdv.id && item.hasSalesArea && item.tableIds.length > 0,
-          );
           return (
             <View key={pdv.id} style={styles.pdvRow}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.pdvName}>{pdv.name}</Text>
                 <Text style={styles.pdvCity}>{pdv.city}</Text>
               </View>
-              {canOrder ? (
                 <Pressable
                   accessibilityRole="button"
                   style={styles.digitar}
-                  onPress={() => {
-                    const customer = catalog.customers.find((item) => item.id === pdv.id);
-                    if (!customer) return;
-                    const id = createDraft(customer.id, customer.tableIds[0]);
-                    router.push(`/pedido/${id}`);
-                  }}
+                  accessibilityLabel={`Digitar pedido para ${pdv.name}`}
+                  onPress={() => startOrderForPdv(pdv)}
                 >
                   <Text style={styles.digitarText}>Digitar</Text>
                 </Pressable>
-              ) : null}
             </View>
           );
         })}
