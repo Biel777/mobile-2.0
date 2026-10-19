@@ -7,10 +7,30 @@ type AppIconProps = IconProps & { name: ComponentProps<typeof Feather>['name'] }
 
 /** Shared square canvas; labels belong to the containing button, not its decoration. */
 export function AppIcon({ name, color, size = 22 }: AppIconProps) {
-  return <View aria-hidden={true} pointerEvents="none" accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
-    style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-    <Feather allowFontScaling={false} name={name} size={size} color={color} style={{ lineHeight: size, includeFontPadding: false, textAlign: 'center' }} />
-  </View>;
+  return (
+    <View
+      aria-hidden={true}
+      pointerEvents="none"
+      accessible={false}
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      style={{
+        width: size,
+        height: size,
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+      }}
+    >
+      <Feather
+        allowFontScaling={false}
+        name={name}
+        size={size}
+        color={color}
+        style={{ lineHeight: size, includeFontPadding: false, textAlign: 'center' }}
+      />
+    </View>
+  );
 }
 
 export const HomeIcon = (props: IconProps) => <AppIcon {...props} name="home" />;

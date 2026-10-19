@@ -9,7 +9,9 @@ vi.mock('./store', () => ({ useAppStore: { getState: vi.fn() } }));
 beforeEach(() => vi.clearAllMocks());
 function setup(catalog = fixtures) {
   const createDraft = vi.fn(() => 'draft-selected-store');
-  vi.mocked(useAppStore.getState).mockReturnValue({ catalog, createDraft } as unknown as ReturnType<typeof useAppStore.getState>);
+  vi.mocked(useAppStore.getState).mockReturnValue({ catalog, createDraft } as unknown as ReturnType<
+    typeof useAppStore.getState
+  >);
   return createDraft;
 }
 describe('atalho de pedido na positivação', () => {

@@ -1,12 +1,6 @@
 import { isPortfolioCustomer } from './portfolio';
 import { comboShare, findProduct, quoteOrder } from './pricing';
-import type {
-  CommercialTable,
-  Coupon,
-  Customer,
-  OrderLine,
-  ValidationIssue,
-} from './types';
+import type { CommercialTable, Coupon, Customer, OrderLine, ValidationIssue } from './types';
 
 export function validateLine(
   table: CommercialTable,
@@ -15,12 +9,18 @@ export function validateLine(
 ): ValidationIssue[] {
   const product = findProduct(table, ean);
   if (!product) {
-    return [{ code: 'NOT_ON_TABLE', message: 'Produto fora da condição comercial.', blocking: true }];
+    return [
+      { code: 'NOT_ON_TABLE', message: 'Produto fora da condição comercial.', blocking: true },
+    ];
   }
 
   const issues: ValidationIssue[] = [];
   if (quantity <= 0) {
-    issues.push({ code: 'QTY', message: `${product.name}: quantidade deve ser maior que zero.`, blocking: true });
+    issues.push({
+      code: 'QTY',
+      message: `${product.name}: quantidade deve ser maior que zero.`,
+      blocking: true,
+    });
     return issues;
   }
   if (quantity % product.packSize !== 0) {
@@ -78,7 +78,11 @@ export function validateOrder(input: {
   }
 
   if (customer.distributors.length === 0) {
-    issues.push({ code: 'NO_OPL', message: 'Pedido sem distribuidor na ordem de envio.', blocking: true });
+    issues.push({
+      code: 'NO_OPL',
+      message: 'Pedido sem distribuidor na ordem de envio.',
+      blocking: true,
+    });
   }
 
   const active = lines.filter((line) => line.quantity > 0);

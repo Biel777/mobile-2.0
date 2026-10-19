@@ -14,20 +14,20 @@ Base `{LEGACY_HOST}/index.php?r=api/{controller}/{action}`, nomes case-sensitive
 
 POST `pedidos/receberPedidoMobile` (EnvioDePedidoDoMobile), campos:
 
-| Interno app | POST Legacy |
-|---|---|
-| id_cliente, id_tabela | mesmos campos |
-| id_usuario | omitir: servidor deriva da sessão |
-| datahora_criacao ISO | Y-m-d H:i:s |
-| array_ordem_envio[i].id_distribuidor | ordem_envio[i][id_distribuidor] |
-| array_ordem_envio[i].prioridade | ordem_envio[i][prioridade] |
-| código de faturamento obtido da regra/PDV | ordem_envio[i][codigo_faturamento] obrigatório |
-| array_produtos[i].ean/quantidade | produtos[i][ean/quantidade] |
-| desconto calculado pelo motor local | produtos[i][desconto] numérico obrigatório |
-| array_agendamento[i].data_envio | agendamento[i][data] e [periodo] H:i (configurar default) |
-| order_client_id/codigo_pedido/justificativa | mesmos campos |
-| cupom | assinatura não documentada; bloquear até confirmar canal |
-| tipo_envio/prazo por OPL | não há campos equivalentes confirmados; exigir mapeamento explícito do prazo para codigo_faturamento |
+| Interno app                                 | POST Legacy                                                                                          |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| id_cliente, id_tabela                       | mesmos campos                                                                                        |
+| id_usuario                                  | omitir: servidor deriva da sessão                                                                    |
+| datahora_criacao ISO                        | Y-m-d H:i:s                                                                                          |
+| array_ordem_envio[i].id_distribuidor        | ordem_envio[i][id_distribuidor]                                                                      |
+| array_ordem_envio[i].prioridade             | ordem_envio[i][prioridade]                                                                           |
+| código de faturamento obtido da regra/PDV   | ordem_envio[i][codigo_faturamento] obrigatório                                                       |
+| array_produtos[i].ean/quantidade            | produtos[i][ean/quantidade]                                                                          |
+| desconto calculado pelo motor local         | produtos[i][desconto] numérico obrigatório                                                           |
+| array_agendamento[i].data_envio             | agendamento[i][data] e [periodo] H:i (configurar default)                                            |
+| order_client_id/codigo_pedido/justificativa | mesmos campos                                                                                        |
+| cupom                                       | assinatura não documentada; bloquear até confirmar canal                                             |
+| tipo_envio/prazo por OPL                    | não há campos equivalentes confirmados; exigir mapeamento explícito do prazo para codigo_faturamento |
 
 Não gerar codigo_faturamento com o ID do distribuidor nem presumir que prazo em dias é um código. Preservar order_client_id nos retries; deduplicação precisa ser homologada no tenant. Flags rejeitaPedidoDuplicado/naoEnviaParaPrePedido/id_pre_pedido_web existem, mas comportamento deve ser validado antes de configurá-las.
 
@@ -39,14 +39,14 @@ Duplicado pode retornar `status:ok,id_pedido` existente. O hash legado usa usuá
 
 ## Bootstrap
 
-| Endpoint | Verbo | Conteúdo |
-|---|---|---|
-| clientes/index | POST | carteira |
-| negociacoes/index | GET | extras[somente_mobile]=1, condições + regra_envio.distribuidores[] |
-| clientes/getClientesTabelasNegociacoes | POST | vínculos PDV×tabela, somente_mobile |
-| produtos/index | POST | catálogo global |
-| produtos/getProdutosDaTabela | POST | preço/desconto por PDV×tabela×OPL |
-| clientes/getDistribuidores | GET | cnpj_cliente, distribuidores elegíveis e códigos |
+| Endpoint                               | Verbo | Conteúdo                                                           |
+| -------------------------------------- | ----- | ------------------------------------------------------------------ |
+| clientes/index                         | POST  | carteira                                                           |
+| negociacoes/index                      | GET   | extras[somente_mobile]=1, condições + regra_envio.distribuidores[] |
+| clientes/getClientesTabelasNegociacoes | POST  | vínculos PDV×tabela, somente_mobile                                |
+| produtos/index                         | POST  | catálogo global                                                    |
+| produtos/getProdutosDaTabela           | POST  | preço/desconto por PDV×tabela×OPL                                  |
+| clientes/getDistribuidores             | GET   | cnpj_cliente, distribuidores elegíveis e códigos                   |
 
 Alternativas: clientes/getPaginated, clientes/getTabelasNegociacao, clientes/getTabelasDoPDV.
 Campos comerciais conhecidos: valor_minimo, quantidade_minima_unidades, descontos_progressivos, obrigatoriedade, permitir_dividir_pedidos_agendados, utilizar_dados_acumulativos_mes_na_validacao, somente_mobile. **Envelopes exatos, campos de filtro de preços e classificações de regras não foram fornecidos**. Mapeamentos do laboratório são amostras explícitas a homologar; não preencher cadastro real incompleto com fixtures do app.

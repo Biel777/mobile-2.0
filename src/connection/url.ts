@@ -11,10 +11,23 @@ export function buildEndpoint({ scheme, host, industry }: EndpointFields): strin
 }
 
 export function validateEndpoint(input: string): string {
-  const value = input.trim().replace(/\/+$/, '').replace(/\/index\.php$/, '');
+  const value = input
+    .trim()
+    .replace(/\/+$/, '')
+    .replace(/\/index\.php$/, '');
   let url: URL;
-  try { url = new URL(value); } catch { throw new Error('Informe uma URL HTTP ou HTTPS válida.'); }
-  if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.search || url.hash) {
+  try {
+    url = new URL(value);
+  } catch {
+    throw new Error('Informe uma URL HTTP ou HTTPS válida.');
+  }
+  if (
+    !['http:', 'https:'].includes(url.protocol) ||
+    url.username ||
+    url.password ||
+    url.search ||
+    url.hash
+  ) {
     throw new Error('A URL deve usar HTTP ou HTTPS, sem credenciais, consulta ou fragmento.');
   }
   if (!/^\/(?:[a-z0-9_-]+\/)?webol$/.test(url.pathname)) {
@@ -25,7 +38,11 @@ export function validateEndpoint(input: string): string {
 
 export function endpointFields(base: string): EndpointFields {
   const url = new URL(validateEndpoint(base));
-  return { scheme: url.protocol === 'http:' ? 'http' : 'https', host: url.host, industry: url.pathname.split('/').slice(1, -1).join('') };
+  return {
+    scheme: url.protocol === 'http:' ? 'http' : 'https',
+    host: url.host,
+    industry: url.pathname.split('/').slice(1, -1).join(''),
+  };
 }
 
 export function transportEndpoint(base: string, platform: string, development: boolean): string {

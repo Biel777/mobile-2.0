@@ -92,7 +92,11 @@ export function quoteLine(
   };
 }
 
-export function quoteOrder(table: CommercialTable, lines: OrderLine[], coupon?: Coupon): OrderQuote {
+export function quoteOrder(
+  table: CommercialTable,
+  lines: OrderLine[],
+  coupon?: Coupon,
+): OrderQuote {
   const active = lines.filter((line) => line.quantity > 0);
   const warnings: string[] = [];
   const quoted = active.map((line) => quoteLine(table, active, line.ean, line.quantity, coupon));

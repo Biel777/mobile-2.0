@@ -457,9 +457,7 @@
     "schemas": {
       "ApiError": {
         "type": "object",
-        "required": [
-          "message"
-        ],
+        "required": ["message"],
         "properties": {
           "message": {
             "type": "string"
@@ -468,10 +466,7 @@
       },
       "LoginRequest": {
         "type": "object",
-        "required": [
-          "login",
-          "password"
-        ],
+        "required": ["login", "password"],
         "properties": {
           "login": {
             "type": "string",
@@ -488,11 +483,7 @@
       },
       "Session": {
         "type": "object",
-        "required": [
-          "token",
-          "userId",
-          "name"
-        ],
+        "required": ["token", "userId", "name"],
         "properties": {
           "token": {
             "type": "string",
@@ -508,13 +499,7 @@
       },
       "User": {
         "type": "object",
-        "required": [
-          "id",
-          "name",
-          "login",
-          "area",
-          "bloqueiaNegociado"
-        ],
+        "required": ["id", "name", "login", "area", "bloqueiaNegociado"],
         "properties": {
           "id": {
             "type": "integer"
@@ -535,10 +520,7 @@
       },
       "DiscountTier": {
         "type": "object",
-        "required": [
-          "quantMin",
-          "percent"
-        ],
+        "required": ["quantMin", "percent"],
         "properties": {
           "quantMin": {
             "type": "number"
@@ -550,12 +532,7 @@
       },
       "TriggerRule": {
         "type": "object",
-        "required": [
-          "triggerEan",
-          "threshold",
-          "childEan",
-          "extraPercent"
-        ],
+        "required": ["triggerEan", "threshold", "childEan", "extraPercent"],
         "properties": {
           "triggerEan": {
             "type": "string"
@@ -610,11 +587,7 @@
           },
           "required": {
             "type": "string",
-            "enum": [
-              "none",
-              "basket",
-              "required"
-            ]
+            "enum": ["none", "basket", "required"]
           },
           "isCombo": {
             "type": "boolean"
@@ -657,10 +630,7 @@
           },
           "minValueBasis": {
             "type": "string",
-            "enum": [
-              "NET",
-              "GROSS"
-            ]
+            "enum": ["NET", "GROSS"]
           },
           "comboParticipation": {
             "type": "number"
@@ -694,13 +664,7 @@
       },
       "Distributor": {
         "type": "object",
-        "required": [
-          "id",
-          "name",
-          "priority",
-          "tipoEnvio",
-          "prazos"
-        ],
+        "required": ["id", "name", "priority", "tipoEnvio", "prazos"],
         "properties": {
           "id": {
             "type": "integer"
@@ -713,10 +677,7 @@
           },
           "tipoEnvio": {
             "type": "integer",
-            "enum": [
-              1,
-              2
-            ]
+            "enum": [1, 2]
           },
           "prazos": {
             "type": "array",
@@ -773,11 +734,7 @@
       },
       "Coupon": {
         "type": "object",
-        "required": [
-          "code",
-          "percent",
-          "minNet"
-        ],
+        "required": ["code", "percent", "minNet"],
         "properties": {
           "code": {
             "type": "string"
@@ -792,11 +749,7 @@
       },
       "PdvRef": {
         "type": "object",
-        "required": [
-          "id",
-          "name",
-          "city"
-        ],
+        "required": ["id", "name", "city"],
         "properties": {
           "id": {
             "type": "integer"
@@ -811,12 +764,7 @@
       },
       "FamilyCoverage": {
         "type": "object",
-        "required": [
-          "family",
-          "metaPdvs",
-          "faturados",
-          "semPositivar"
-        ],
+        "required": ["family", "metaPdvs", "faturados", "semPositivar"],
         "properties": {
           "family": {
             "type": "string"
@@ -886,11 +834,7 @@
       },
       "FlagFamilyMin": {
         "type": "object",
-        "required": [
-          "family",
-          "minNet",
-          "billedNet"
-        ],
+        "required": ["family", "minNet", "billedNet"],
         "properties": {
           "family": {
             "type": "string"
@@ -905,12 +849,7 @@
       },
       "FlagGoal": {
         "type": "object",
-        "required": [
-          "name",
-          "minNet",
-          "billedNet",
-          "families"
-        ],
+        "required": ["name", "minNet", "billedNet", "families"],
         "properties": {
           "name": {
             "type": "string"
@@ -931,14 +870,7 @@
       },
       "BootstrapData": {
         "type": "object",
-        "required": [
-          "user",
-          "customers",
-          "tables",
-          "coupons",
-          "goals",
-          "flags"
-        ],
+        "required": ["user", "customers", "tables", "coupons", "goals", "flags"],
         "properties": {
           "user": {
             "$ref": "#/components/schemas/User"
@@ -1012,11 +944,7 @@
       },
       "Invoice": {
         "type": "object",
-        "required": [
-          "number",
-          "value",
-          "issuedAt"
-        ],
+        "required": ["number", "value", "issuedAt"],
         "properties": {
           "number": {
             "type": "string"
@@ -1032,13 +960,7 @@
       },
       "SubOrder": {
         "type": "object",
-        "required": [
-          "id",
-          "distributorName",
-          "status",
-          "prazo",
-          "items"
-        ],
+        "required": ["id", "distributorName", "status", "prazo", "items"],
         "properties": {
           "id": {
             "type": "integer"
@@ -1111,12 +1033,7 @@
       },
       "DistributorSubmission": {
         "type": "object",
-        "required": [
-          "id_distribuidor",
-          "prioridade",
-          "tipo_envio",
-          "prazo"
-        ],
+        "required": ["id_distribuidor", "prioridade", "tipo_envio", "prazo"],
         "properties": {
           "id_distribuidor": {
             "type": "integer"
@@ -1128,10 +1045,7 @@
           },
           "tipo_envio": {
             "type": "integer",
-            "enum": [
-              1,
-              2
-            ]
+            "enum": [1, 2]
           },
           "prazo": {
             "type": "integer"
@@ -1140,10 +1054,7 @@
       },
       "ProductSubmission": {
         "type": "object",
-        "required": [
-          "ean",
-          "quantidade"
-        ],
+        "required": ["ean", "quantidade"],
         "properties": {
           "ean": {
             "type": "string"
@@ -1159,9 +1070,7 @@
       },
       "ScheduleSubmission": {
         "type": "object",
-        "required": [
-          "data_envio"
-        ],
+        "required": ["data_envio"],
         "properties": {
           "data_envio": {
             "type": "string",
@@ -1238,11 +1147,7 @@
       },
       "SubmittedOrder": {
         "type": "object",
-        "required": [
-          "id_pedido_gerado",
-          "id_status",
-          "erros_envio"
-        ],
+        "required": ["id_pedido_gerado", "id_status", "erros_envio"],
         "properties": {
           "id_pedido_gerado": {
             "type": "integer",
@@ -1250,22 +1155,7 @@
           },
           "id_status": {
             "type": "integer",
-            "enum": [
-              1,
-              2,
-              3,
-              4,
-              5,
-              6,
-              9,
-              10,
-              11,
-              12,
-              13,
-              14,
-              15,
-              16
-            ]
+            "enum": [1, 2, 3, 4, 5, 6, 9, 10, 11, 12, 13, 14, 15, 16]
           },
           "erros_envio": {
             "type": "array",
@@ -1278,11 +1168,7 @@
       },
       "RejectedSubmission": {
         "type": "object",
-        "required": [
-          "id_pedido_gerado",
-          "id_status",
-          "erros_envio"
-        ],
+        "required": ["id_pedido_gerado", "id_status", "erros_envio"],
         "properties": {
           "id_pedido_gerado": {
             "type": "integer",
@@ -1290,23 +1176,7 @@
           },
           "id_status": {
             "type": "integer",
-            "enum": [
-              1,
-              2,
-              3,
-              4,
-              5,
-              6,
-              7,
-              9,
-              10,
-              11,
-              12,
-              13,
-              14,
-              15,
-              16
-            ]
+            "enum": [1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16]
           },
           "erros_envio": {
             "type": "array",

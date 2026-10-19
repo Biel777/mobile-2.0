@@ -17,11 +17,13 @@ const HUBS = ['/', '/clientes', '/pedidos', '/metas', '/positivacao', '/bandeira
 
 export default function Layout() {
   const path = usePathname();
-  useEffect(() => { void initializeConnection(); }, []);
-  const hydrated = useAppStore(state => state.hydrated);
-  const session = useAppStore(state => state.session);
-  const authRequired = useAppStore(state => state.authRequired);
-  const online = useAppStore(state => state.online);
+  useEffect(() => {
+    void initializeConnection();
+  }, []);
+  const hydrated = useAppStore((state) => state.hydrated);
+  const session = useAppStore((state) => state.session);
+  const authRequired = useAppStore((state) => state.authRequired);
+  const online = useAppStore((state) => state.online);
   const setOnline = useAppStore((state) => state.setOnline);
   const [ready] = useFonts({
     ...Feather.font,
@@ -55,7 +57,15 @@ export default function Layout() {
   }
 
   return (
-    <View style={{ flex: 1, maxWidth: 430, width: '100%', alignSelf: 'center', backgroundColor: colors.page }}>
+    <View
+      style={{
+        flex: 1,
+        maxWidth: 430,
+        width: '100%',
+        alignSelf: 'center',
+        backgroundColor: colors.page,
+      }}
+    >
       <StatusBar style="dark" />
       <IntegrationStatus />
       <Stack

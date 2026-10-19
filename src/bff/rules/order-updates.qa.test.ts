@@ -4,9 +4,34 @@ import type { LocalOrder, TrackedOrder } from './types';
 
 const at = '2026-10-17T10:00:00Z';
 function order(id = 1, status = 1): TrackedOrder {
-  return { id, orderClientId: `mobile-${id}`, customerName: 'PDV', tableName: 'Tabela', status, prazo: 21,
-    createdAt: at, subOrders: [{ id: id * 10, distributorName: 'OPL', status, prazo: 21,
-      items: [{ ean: '123', name: 'Produto', unitPrice: 10, discountPercent: 0, quantPed: 10, quantEsp: 10, quantNot: 0 }] }] };
+  return {
+    id,
+    orderClientId: `mobile-${id}`,
+    customerName: 'PDV',
+    tableName: 'Tabela',
+    status,
+    prazo: 21,
+    createdAt: at,
+    subOrders: [
+      {
+        id: id * 10,
+        distributorName: 'OPL',
+        status,
+        prazo: 21,
+        items: [
+          {
+            ean: '123',
+            name: 'Produto',
+            unitPrice: 10,
+            discountPercent: 0,
+            quantPed: 10,
+            quantEsp: 10,
+            quantNot: 0,
+          },
+        ],
+      },
+    ],
+  };
 }
 
 describe('QA independente da central de pedidos', () => {
@@ -44,13 +69,32 @@ describe('QA independente da central de pedidos', () => {
   });
 
   it('reconcilia falha local com retorno remoto sem order_client_id e mantém só um pedido', () => {
-    const local: LocalOrder = { id: 'loc-1', orderClientId: 'loc-1', customerId: 1, customerName: 'PDV', tableId: 1,
-      userId: 1, createdAt: at, lines: [], distributorIds: [], prazos: {}, localStatus: 9, queueStatus: 'failed',
-      remoteId: 99, deliveryUncertain: true, lastError: 'Retorno perdido' };
+    const local: LocalOrder = {
+      id: 'loc-1',
+      orderClientId: 'loc-1',
+      customerId: 1,
+      customerName: 'PDV',
+      tableId: 1,
+      userId: 1,
+      createdAt: at,
+      lines: [],
+      distributorIds: [],
+      prazos: {},
+      localStatus: 9,
+      queueStatus: 'failed',
+      remoteId: 99,
+      deliveryUncertain: true,
+      lastError: 'Retorno perdido',
+    };
     let updates = reconcileOrderUpdates([], [], [local], at);
     const remote = order(99, 1);
     remote.orderClientId = '';
-    updates = reconcileOrderUpdates(updates, [remote], [{ ...local, queueStatus: 'sent' }], '2026-10-17T10:01:00Z');
+    updates = reconcileOrderUpdates(
+      updates,
+      [remote],
+      [{ ...local, queueStatus: 'sent' }],
+      '2026-10-17T10:01:00Z',
+    );
     expect(updates).toHaveLength(1);
     expect(updates[0].orderId).toBe(99);
     expect(updates[0].events).toHaveLength(2);

@@ -2,7 +2,11 @@ import { findProduct } from './pricing';
 import type { CommercialTable, OrderLine } from './types';
 
 /** Parte as quantidades em N envios. O resto do fracionamento fica no primeiro. */
-export function splitLines(table: CommercialTable, lines: OrderLine[], parts: number): OrderLine[][] {
+export function splitLines(
+  table: CommercialTable,
+  lines: OrderLine[],
+  parts: number,
+): OrderLine[][] {
   const count = Math.max(1, parts);
   return Array.from({ length: count }, (_, part) =>
     lines
@@ -17,10 +21,9 @@ export function splitLines(table: CommercialTable, lines: OrderLine[], parts: nu
   );
 }
 
-export function promoteIfDue<T extends { status: number; dataEnvio?: string; subOrders: { status: number }[] }>(
-  orders: T[],
-  today: string,
-): T[] {
+export function promoteIfDue<
+  T extends { status: number; dataEnvio?: string; subOrders: { status: number }[] },
+>(orders: T[], today: string): T[] {
   return orders.map((order) => {
     if (order.status !== 3 || !order.dataEnvio || order.dataEnvio > today) {
       return order;

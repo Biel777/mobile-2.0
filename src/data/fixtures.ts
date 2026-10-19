@@ -1,4 +1,11 @@
-import type { CommercialTable, Coupon, Customer, FlagGoal, Goals, TrackedOrder } from '@rules/types';
+import type {
+  CommercialTable,
+  Coupon,
+  Customer,
+  FlagGoal,
+  Goals,
+  TrackedOrder,
+} from '@rules/types';
 
 const regular: CommercialTable = {
   id: 101,
@@ -160,7 +167,9 @@ const customers: Customer[] = [
     areaId: 7,
     hasSalesArea: true,
     tableIds: [202],
-    distributors: [{ id: 501, name: 'Profarma Campinas', priority: 1, tipoEnvio: 2, prazos: [14, 21, 28] }],
+    distributors: [
+      { id: 501, name: 'Profarma Campinas', priority: 1, tipoEnvio: 2, prazos: [14, 21, 28] },
+    ],
   },
   {
     id: 33,
@@ -254,7 +263,8 @@ const tracked: TrackedOrder[] = [
   {
     id: 8801,
     orderClientId: 'seed-8801',
-    customerId: 11, customerCnpj: '12.345.678/0001-90',
+    customerId: 11,
+    customerCnpj: '12.345.678/0001-90',
     customerName: 'Drogaria Central Ltda',
     tableName: regular.name,
     status: 10,
@@ -303,7 +313,8 @@ const tracked: TrackedOrder[] = [
   {
     id: 8803,
     orderClientId: 'seed-8803',
-    customerId: 11, customerCnpj: '12.345.678/0001-90',
+    customerId: 11,
+    customerCnpj: '12.345.678/0001-90',
     customerName: 'Drogaria Central Ltda',
     tableName: campaign.name,
     status: 3,
@@ -333,7 +344,8 @@ const tracked: TrackedOrder[] = [
   {
     id: 8814,
     orderClientId: 'seed-8814',
-    customerId: 11, customerCnpj: '12.345.678/0001-90',
+    customerId: 11,
+    customerCnpj: '12.345.678/0001-90',
     customerName: 'Drogaria Central Ltda',
     tableName: regular.name,
     status: 14,
@@ -362,7 +374,8 @@ const tracked: TrackedOrder[] = [
   {
     id: 8804,
     orderClientId: 'seed-8804',
-    customerId: 22, customerCnpj: '98.765.432/0001-10',
+    customerId: 22,
+    customerCnpj: '98.765.432/0001-10',
     customerName: 'Farmácia São José',
     tableName: combo.name,
     status: 4,
@@ -391,7 +404,13 @@ const tracked: TrackedOrder[] = [
 ];
 
 export const fixtures = {
-  user: { id: 77, name: 'Marina Souza', login: 'marina', area: 'Campinas', bloqueiaNegociado: true },
+  user: {
+    id: 77,
+    name: 'Marina Souza',
+    login: 'marina',
+    area: 'Campinas',
+    bloqueiaNegociado: true,
+  },
   tables: [regular, combo, campaign],
   customers,
   coupons,

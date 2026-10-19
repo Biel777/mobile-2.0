@@ -21,11 +21,9 @@ function draft(id: string): LocalOrder {
 
 describe('fila de envio', () => {
   it('envia pedido pendente uma única vez mesmo com retry', async () => {
-    const first = await flushQueue(
-      [draft('A')],
-      mockClient,
-      () => [{ id_distribuidor: 501, prioridade: 1, tipo_envio: 2, prazo: 28 }],
-    );
+    const first = await flushQueue([draft('A')], mockClient, () => [
+      { id_distribuidor: 501, prioridade: 1, tipo_envio: 2, prazo: 28 },
+    ]);
     const retry = await flushQueue(
       first.map((order) => ({ ...order, queueStatus: 'pending' as const })),
       mockClient,
@@ -37,11 +35,9 @@ describe('fila de envio', () => {
 
   it('mantém o rascunho quando a validação do servidor falha', async () => {
     const invalid: LocalOrder = { ...draft('B'), lines: [{ ean: '78910002', quantity: 6 }] };
-    const result = await flushQueue(
-      [invalid],
-      mockClient,
-      () => [{ id_distribuidor: 501, prioridade: 1, tipo_envio: 2, prazo: 28 }],
-    );
+    const result = await flushQueue([invalid], mockClient, () => [
+      { id_distribuidor: 501, prioridade: 1, tipo_envio: 2, prazo: 28 },
+    ]);
     expect(result[0].queueStatus).toBe('failed');
     expect(result[0].lastError).toMatch(/mínimo/i);
   });

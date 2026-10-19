@@ -32,7 +32,11 @@ export function PrimaryButton({
       accessibilityRole="button"
       onPress={onPress}
       disabled={disabled}
-      style={({ pressed }) => [styles.primary, pressed && !disabled && styles.pressed, disabled && styles.disabled]}
+      style={({ pressed }) => [
+        styles.primary,
+        pressed && !disabled && styles.pressed,
+        disabled && styles.disabled,
+      ]}
     >
       <Text style={[styles.primaryText, disabled && styles.disabledText]}>{title}</Text>
     </Pressable>
@@ -47,7 +51,13 @@ export function GhostButton({ title, onPress }: { title: string; onPress: () => 
   );
 }
 
-export function Banner({ text, tone = 'warn' }: { text: string; tone?: 'warn' | 'danger' | 'good' }) {
+export function Banner({
+  text,
+  tone = 'warn',
+}: {
+  text: string;
+  tone?: 'warn' | 'danger' | 'good';
+}) {
   const map = {
     warn: { bg: colors.warnBg, fg: colors.warn },
     danger: { bg: colors.dangerBg, fg: colors.danger },

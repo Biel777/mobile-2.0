@@ -1,38 +1,650 @@
 <!doctype html>
-<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sales API • Laboratório de integração</title>
-<style>:root{font-family:Inter,system-ui,sans-serif;color:#172b4d;background:#f4f7fb}*{box-sizing:border-box}body{margin:0}header{background:#102d47;color:white;padding:28px max(24px,calc((100vw - 1200px)/2))}header small{color:#8edacb;text-transform:uppercase;letter-spacing:.13em}h1{font-size:28px;margin:8px 0}header p{color:#cfdae7;max-width:760px;line-height:1.6}main{max-width:1200px;margin:24px auto;padding:0 20px;display:grid;gap:20px;grid-template-columns:1fr 1fr}.card{background:white;border:1px solid #dde5ed;border-radius:14px;padding:22px;min-width:0}h2{font-size:18px;margin:0 0 12px}p,small{line-height:1.5}label{display:block;font-size:13px;font-weight:600;margin:12px 0 6px}input,select,textarea{width:100%;border:1px solid #a9b9c9;border-radius:7px;padding:11px;font:inherit;background:white;color:#172b4d}textarea{font:12px/1.6 monospace;min-height:320px;resize:vertical}button{background:#147b70;color:white;border:0;padding:11px 15px;border-radius:7px;font:inherit;cursor:pointer;margin:8px 6px 0 0}button.secondary{background:#e6edf5;color:#172b4d}button.danger{background:#9c3642}button:disabled{opacity:.55;cursor:wait}button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid #5199e8;outline-offset:2px}.wide{grid-column:1/-1}.hint{color:#52667c;font-size:13px}.badge{background:#edf8f4;color:#166552;padding:5px 10px;border-radius:20px;font-size:12px}pre{background:#102235;color:#d3edfa;padding:16px;border-radius:8px;max-height:350px;overflow:auto;font:12px/1.6 monospace;white-space:pre-wrap;word-break:break-word}.order{border-top:1px solid #e0e7ef;padding:14px 0}.order strong{display:block}.order small{color:#52667c}.order button{font-size:12px;padding:8px 10px}.notice{padding:12px;background:#e9f0ff;border-radius:8px;margin:12px 0;white-space:pre-wrap}table{width:100%;border-collapse:collapse;font-size:12px}td,th{text-align:left;padding:8px;border-bottom:1px solid #e3eaf0;overflow-wrap:anywhere}@media(max-width:760px){main{grid-template-columns:1fr}header{padding:24px}h1{font-size:23px}.card{padding:16px}}</style></head>
-<body><header><small>Força de vendas · Desenvolvimento</small><h1>Laboratório de integração Sales API</h1><p>Teste autenticação, sincronização, pedidos e falhas HTTP sem instalar o Sales API. Este servidor usa dados fictícios em memória e um contrato proposto; os testes não homologam a API real.</p></header>
-<main><section class="card"><h2>1. Conectar e sincronizar</h2><label for="protocol">Protocolo da API</label><select id="protocol"><option value="legacy">Legacy · formulário legado</option><option value="mobile-v1">Mobile v1 · laboratório normalizado</option></select><p class="hint">Rotas Legacy seguem o mapa fornecido. Os envelopes e códigos CF deste laboratório são sintéticos e exigem homologação.</p><span id="session" class="badge">Sem sessão</span><form id="loginForm"><label for="login">Usuário fictício</label><input id="login" value="marina" autocomplete="off" required><label for="password">Senha fictícia (mínimo 3 caracteres)</label><input id="password" type="password" value="demo" autocomplete="off" minlength="3" required><button>Entrar</button><button id="sync" type="button" class="secondary">Sincronizar cadastros</button></form><p class="hint">A sessão fica apenas na memória desta aba. Não informe credenciais reais.</p><label for="scenario">Cenário para as próximas chamadas da API</label><select id="scenario"><option value="normal">Normal</option><option value="latency">Lentidão: 2,5 segundos por chamada</option><option value="server-error">Servidor indisponível: HTTP 500</option><option value="unauthorized">Sessão expirada: HTTP 401</option><option value="lost-response">Aceitar pedido e perder confirmação: HTTP 503 uma vez</option></select><button id="apply">Aplicar cenário</button><button id="reset" class="danger">Restaurar dados fictícios</button><p class="hint">“Confirmação perdida” grava o pedido e retorna 503. Reenvie sem alterar o JSON para comprovar que não duplica. O cenário retorna ao normal após essa falha.</p><div id="notice" class="notice" role="status" aria-live="polite">Entre para iniciar.</div></section>
-<section class="card"><h2>2. Enviar um pedido</h2><p class="hint">JSON do modelo do app. No Legacy, o painel traduz para formulário; confira a última chamada. Para agendar, inclua array_agendamento: [{"data_envio":"2030-12-01"}]. Para criar outro pedido, gere uma nova chave.</p><label for="payload">Payload do pedido</label><textarea id="payload" spellcheck="false"></textarea><button id="submit">Enviar / reenviar pedido</button><button id="newKey" class="secondary">Nova chave</button><p class="hint">Mobile v1 usa Idempotency-Key. Legacy envia order_client_id; a deduplicação real precisa de homologação.</p></section>
-<section class="card wide"><h2>3. Acompanhar e simular o retorno do distribuidor</h2><button id="list">Atualizar pedidos</button><button id="goals" class="secondary">Consultar metas</button><div id="orders"><p class="hint">Consulte os pedidos após entrar.</p></div></section>
-<section class="card"><h2>Última chamada e resposta HTTP</h2><pre id="request">Nenhuma chamada realizada.</pre><p class="hint">Tokens são ocultados neste painel.</p><pre id="response">Nenhuma chamada realizada.</pre></section><section class="card"><h2>Histórico de chamadas</h2><button id="logs" class="secondary">Atualizar histórico</button><p class="hint">Somente método, caminho, status e duração. Sem corpos, senhas ou tokens.</p><div id="history"></div></section></main>
-<script>
-const $=id=>document.getElementById(id);const newKey=()=>globalThis.crypto?.randomUUID?.()||'sim-'+Date.now()+'-'+Math.random().toString(36).slice(2);let token='';const prefix='/api/mobile/v1';
-const sample={order_client_id:newKey(),id_cliente:11,id_tabela:101,id_usuario:77,datahora_criacao:new Date().toISOString(),array_ordem_envio:[{id_distribuidor:501,prioridade:1,tipo_envio:2,prazo:21,codigo_faturamento:"CF-501-21"}],array_produtos:[{ean:'78910001',quantidade:120,desconto:25}]};$('payload').value=JSON.stringify(sample,null,2);
-function show(message){$('notice').textContent=message}
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Sales API • Laboratório de integração</title>
+    <style>
+      :root {
+        font-family: Inter, system-ui, sans-serif;
+        color: #172b4d;
+        background: #f4f7fb;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+      }
+      header {
+        background: #102d47;
+        color: white;
+        padding: 28px max(24px, calc((100vw - 1200px) / 2));
+      }
+      header small {
+        color: #8edacb;
+        text-transform: uppercase;
+        letter-spacing: 0.13em;
+      }
+      h1 {
+        font-size: 28px;
+        margin: 8px 0;
+      }
+      header p {
+        color: #cfdae7;
+        max-width: 760px;
+        line-height: 1.6;
+      }
+      main {
+        max-width: 1200px;
+        margin: 24px auto;
+        padding: 0 20px;
+        display: grid;
+        gap: 20px;
+        grid-template-columns: 1fr 1fr;
+      }
+      .card {
+        background: white;
+        border: 1px solid #dde5ed;
+        border-radius: 14px;
+        padding: 22px;
+        min-width: 0;
+      }
+      h2 {
+        font-size: 18px;
+        margin: 0 0 12px;
+      }
+      p,
+      small {
+        line-height: 1.5;
+      }
+      label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        margin: 12px 0 6px;
+      }
+      input,
+      select,
+      textarea {
+        width: 100%;
+        border: 1px solid #a9b9c9;
+        border-radius: 7px;
+        padding: 11px;
+        font: inherit;
+        background: white;
+        color: #172b4d;
+      }
+      textarea {
+        font: 12px/1.6 monospace;
+        min-height: 320px;
+        resize: vertical;
+      }
+      button {
+        background: #147b70;
+        color: white;
+        border: 0;
+        padding: 11px 15px;
+        border-radius: 7px;
+        font: inherit;
+        cursor: pointer;
+        margin: 8px 6px 0 0;
+      }
+      button.secondary {
+        background: #e6edf5;
+        color: #172b4d;
+      }
+      button.danger {
+        background: #9c3642;
+      }
+      button:disabled {
+        opacity: 0.55;
+        cursor: wait;
+      }
+      button:focus-visible,
+      input:focus-visible,
+      textarea:focus-visible,
+      select:focus-visible {
+        outline: 3px solid #5199e8;
+        outline-offset: 2px;
+      }
+      .wide {
+        grid-column: 1/-1;
+      }
+      .hint {
+        color: #52667c;
+        font-size: 13px;
+      }
+      .badge {
+        background: #edf8f4;
+        color: #166552;
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+      }
+      pre {
+        background: #102235;
+        color: #d3edfa;
+        padding: 16px;
+        border-radius: 8px;
+        max-height: 350px;
+        overflow: auto;
+        font: 12px/1.6 monospace;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+      .order {
+        border-top: 1px solid #e0e7ef;
+        padding: 14px 0;
+      }
+      .order strong {
+        display: block;
+      }
+      .order small {
+        color: #52667c;
+      }
+      .order button {
+        font-size: 12px;
+        padding: 8px 10px;
+      }
+      .notice {
+        padding: 12px;
+        background: #e9f0ff;
+        border-radius: 8px;
+        margin: 12px 0;
+        white-space: pre-wrap;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+      }
+      td,
+      th {
+        text-align: left;
+        padding: 8px;
+        border-bottom: 1px solid #e3eaf0;
+        overflow-wrap: anywhere;
+      }
+      @media (max-width: 760px) {
+        main {
+          grid-template-columns: 1fr;
+        }
+        header {
+          padding: 24px;
+        }
+        h1 {
+          font-size: 23px;
+        }
+        .card {
+          padding: 16px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <small>Força de vendas · Desenvolvimento</small>
+      <h1>Laboratório de integração Sales API</h1>
+      <p>
+        Teste autenticação, sincronização, pedidos e falhas HTTP sem instalar o Sales API. Este
+        servidor usa dados fictícios em memória e um contrato proposto; os testes não homologam a
+        API real.
+      </p>
+    </header>
+    <main>
+      <section class="card">
+        <h2>1. Conectar e sincronizar</h2>
+        <label for="protocol">Protocolo da API</label
+        ><select id="protocol">
+          <option value="legacy">Legacy · formulário legado</option>
+          <option value="mobile-v1">Mobile v1 · laboratório normalizado</option>
+        </select>
+        <p class="hint">
+          Rotas Legacy seguem o mapa fornecido. Os envelopes e códigos CF deste laboratório são
+          sintéticos e exigem homologação.
+        </p>
+        <span id="session" class="badge">Sem sessão</span>
+        <form id="loginForm">
+          <label for="login">Usuário fictício</label
+          ><input id="login" value="marina" autocomplete="off" required /><label for="password"
+            >Senha fictícia (mínimo 3 caracteres)</label
+          ><input
+            id="password"
+            type="password"
+            value="demo"
+            autocomplete="off"
+            minlength="3"
+            required
+          /><button>Entrar</button
+          ><button id="sync" type="button" class="secondary">Sincronizar cadastros</button>
+        </form>
+        <p class="hint">
+          A sessão fica apenas na memória desta aba. Não informe credenciais reais.
+        </p>
+        <label for="scenario">Cenário para as próximas chamadas da API</label
+        ><select id="scenario">
+          <option value="normal">Normal</option>
+          <option value="latency">Lentidão: 2,5 segundos por chamada</option>
+          <option value="server-error">Servidor indisponível: HTTP 500</option>
+          <option value="unauthorized">Sessão expirada: HTTP 401</option>
+          <option value="lost-response">
+            Aceitar pedido e perder confirmação: HTTP 503 uma vez
+          </option></select
+        ><button id="apply">Aplicar cenário</button
+        ><button id="reset" class="danger">Restaurar dados fictícios</button>
+        <p class="hint">
+          “Confirmação perdida” grava o pedido e retorna 503. Reenvie sem alterar o JSON para
+          comprovar que não duplica. O cenário retorna ao normal após essa falha.
+        </p>
+        <div id="notice" class="notice" role="status" aria-live="polite">Entre para iniciar.</div>
+      </section>
+      <section class="card">
+        <h2>2. Enviar um pedido</h2>
+        <p class="hint">
+          JSON do modelo do app. No Legacy, o painel traduz para formulário; confira a última
+          chamada. Para agendar, inclua array_agendamento: [{"data_envio":"2030-12-01"}]. Para criar
+          outro pedido, gere uma nova chave.
+        </p>
+        <label for="payload">Payload do pedido</label
+        ><textarea id="payload" spellcheck="false"></textarea
+        ><button id="submit">Enviar / reenviar pedido</button
+        ><button id="newKey" class="secondary">Nova chave</button>
+        <p class="hint">
+          Mobile v1 usa Idempotency-Key. Legacy envia order_client_id; a deduplicação real precisa
+          de homologação.
+        </p>
+      </section>
+      <section class="card wide">
+        <h2>3. Acompanhar e simular o retorno do distribuidor</h2>
+        <button id="list">Atualizar pedidos</button
+        ><button id="goals" class="secondary">Consultar metas</button>
+        <div id="orders"><p class="hint">Consulte os pedidos após entrar.</p></div>
+      </section>
+      <section class="card">
+        <h2>Última chamada e resposta HTTP</h2>
+        <pre id="request">Nenhuma chamada realizada.</pre>
+        <p class="hint">Tokens são ocultados neste painel.</p>
+        <pre id="response">Nenhuma chamada realizada.</pre>
+      </section>
+      <section class="card">
+        <h2>Histórico de chamadas</h2>
+        <button id="logs" class="secondary">Atualizar histórico</button>
+        <p class="hint">Somente método, caminho, status e duração. Sem corpos, senhas ou tokens.</p>
+        <div id="history"></div>
+      </section>
+    </main>
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const newKey = () =>
+        globalThis.crypto?.randomUUID?.() ||
+        'sim-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+      let token = '';
+      const prefix = '/api/mobile/v1';
+      const sample = {
+        order_client_id: newKey(),
+        id_cliente: 11,
+        id_tabela: 101,
+        id_usuario: 77,
+        datahora_criacao: new Date().toISOString(),
+        array_ordem_envio: [
+          {
+            id_distribuidor: 501,
+            prioridade: 1,
+            tipo_envio: 2,
+            prazo: 21,
+            codigo_faturamento: 'CF-501-21',
+          },
+        ],
+        array_produtos: [{ ean: '78910001', quantidade: 120, desconto: 25 }],
+      };
+      $('payload').value = JSON.stringify(sample, null, 2);
+      function show(message) {
+        $('notice').textContent = message;
+      }
 
-let legacySession=null;
-$('protocol').onchange=()=>{token='';legacySession=null;$('session').textContent='Sem sessão';show('Protocolo alterado. Entre novamente.');$('orders').replaceChildren()};
-function sqlDate(value){const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).formatToParts(new Date(value));const get=k=>parts.find(p=>p.type===k).value;return get('year')+'-'+get('month')+'-'+get('day')+' '+get('hour')+':'+get('minute')+':'+get('second')}
-function redactUrl(path){const url=new URL(path,location.origin);for(const key of [...url.searchParams.keys()])if(/token|senha|password/i.test(key))url.searchParams.set(key,'[oculto]');return url.pathname+url.search}
-function redactBody(value){if(value instanceof URLSearchParams)return [...value.entries()].map(([k,v])=>k+'='+(/token|senha|password/i.test(k)?'[oculto]':v)).join('\n');return value===undefined?'':JSON.stringify(value,(k,v)=>/token|senha|password/i.test(k)?'[oculto]':v,2)}
-async function wire(path,method='GET',body,form=false){const headers={'Content-Type':form?'application/x-www-form-urlencoded':'application/json'};if(token&&!form)headers.Authorization='Bearer '+token;if(path===prefix+'/orders'&&method==='POST')headers['Idempotency-Key']=body.order_client_id;const safePath=redactUrl(path);$('request').textContent=method+' '+safePath+'\n'+JSON.stringify({...headers,...(headers.Authorization?{Authorization:'Bearer [oculto]'}:{})},null,2)+'\n'+redactBody(body);const res=await fetch(path,{method,headers,body:body===undefined?undefined:form?body.toString():JSON.stringify(body)});const data=await res.json();$('response').textContent=method+' '+safePath+' → '+res.status+'\n'+JSON.stringify(data,(k,v)=>/token|senha|password/i.test(k)?'[oculto]':v,2);if(!res.ok||data.status==='erro')throw Error(data.message||data.mensagem||'Falha HTTP '+res.status);return data}
-async function legacy(route,method='POST',extra={},auth=true){const form=new URLSearchParams();if(auth&&legacySession){form.set('user[login]',legacySession.login);form.set('user[token]',legacySession.token);form.set('user[codigo_sincronizacao]',legacySession.codigo_sincronizacao)}for(const[k,v]of Object.entries(extra))form.set(k,String(v));const path='/index.php?r=api/'+route;return method==='GET'?wire(path+'&'+form.toString(),'GET',undefined,true):wire(path,'POST',form,true)}
-async function call(path,method='GET',body){if($('protocol').value!=='legacy'||!path.startsWith(prefix)){return wire(path,method,body)}
-if(path===prefix+'/auth/login'){const data=await legacy('authentication/new','POST',{'user[login]':body.login,'user[senha]':body.password,'user[imei]':'simulator-panel','user[versao]':'0.1.0'},false);legacySession=data;const session=await legacy('session/new','POST',{'user[versao]':'0.1.0'});legacySession.codigo_sincronizacao=session.codigo_sincronizacao;return{...data,name:data.nome||body.login,userId:data.id_usuario}}
-if(path===prefix+'/bootstrap'){const customers=await legacy('clientes/index');const tables=await legacy('negociacoes/index','GET',{'extras[somente_mobile]':1});const links=await legacy('clientes/getClientesTabelasNegociacoes');await legacy('produtos/index');for(const customer of customers.clientes){await legacy('clientes/getDistribuidores','GET',{cnpj_cliente:customer.cnpj})}for(const table of tables.negociacoes){const link=links.vinculos.find(v=>v.id_tabela===table.id_tabela);if(link)await legacy('produtos/getProdutosDaTabela','POST',{id_tabela:table.id_tabela,id_cliente:link.id_cliente,id_distribuidor:501})}return{customers:customers.clientes,tables:tables.negociacoes}}
-if(path===prefix+'/goals')return legacy('metas/desempenhoArea');
-if(path===prefix+'/orders'&&method==='POST'){const extra={order_client_id:body.order_client_id,id_cliente:body.id_cliente,id_tabela:body.id_tabela,datahora_criacao:sqlDate(body.datahora_criacao)};if(body.cupom)throw Error('Canal de cupom Legacy não documentado');for(const[key,value]of Object.entries(body)){if(['codigo_pedido','justificativa'].includes(key))extra[key]=value}body.array_ordem_envio.forEach((d,i)=>{if(!d.codigo_faturamento)throw Error('Informe codigo_faturamento conhecido para o prazo. Códigos CF são fictícios do laboratório.');extra['ordem_envio['+i+'][id_distribuidor]']=d.id_distribuidor;extra['ordem_envio['+i+'][prioridade]']=d.prioridade;extra['ordem_envio['+i+'][codigo_faturamento]']=d.codigo_faturamento});body.array_produtos.forEach((p,i)=>{if(typeof p.desconto!=='number')throw Error('Informe desconto numérico em cada produto.');for(const key of ['ean','quantidade','desconto'])extra['produtos['+i+']['+key+']']=p[key]});(body.array_agendamento||[]).forEach((d,i)=>{extra['agendamento['+i+'][data]']=d.data_envio;extra['agendamento['+i+'][periodo]']=d.periodo||'08:00'});const data=await legacy('pedidos/receberPedidoMobile','POST',extra);return{id_pedido_gerado:data.id_pedido,erros_envio:[]}}
-if(path===prefix+'/orders'){const subs=await legacy('subPedidos/index','POST',{time:'1970-01-01 00:00:00'});await legacy('nota/index','POST',{time:'1970-01-01 00:00:00'});const grouped=new Map();for(const sub of subs.subPedidos){if(!grouped.has(sub.pedido_id))grouped.set(sub.pedido_id,{id:sub.pedido_id,orderClientId:sub.order_client_id,customerName:sub.cliente,tableName:sub.tabela,status:sub.status_id,dataEnvio:sub.data_envio})}const orders=[...grouped.values()];const query={};orders.forEach((o,i)=>query['pedidos['+i+']']=o.id);await legacy('pedidos/getStatusPedidos','GET',query);return orders}
-return wire(path,method,body)}
+      let legacySession = null;
+      $('protocol').onchange = () => {
+        token = '';
+        legacySession = null;
+        $('session').textContent = 'Sem sessão';
+        show('Protocolo alterado. Entre novamente.');
+        $('orders').replaceChildren();
+      };
+      function sqlDate(value) {
+        const parts = new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'America/Sao_Paulo',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hourCycle: 'h23',
+        }).formatToParts(new Date(value));
+        const get = (k) => parts.find((p) => p.type === k).value;
+        return (
+          get('year') +
+          '-' +
+          get('month') +
+          '-' +
+          get('day') +
+          ' ' +
+          get('hour') +
+          ':' +
+          get('minute') +
+          ':' +
+          get('second')
+        );
+      }
+      function redactUrl(path) {
+        const url = new URL(path, location.origin);
+        for (const key of [...url.searchParams.keys()])
+          if (/token|senha|password/i.test(key)) url.searchParams.set(key, '[oculto]');
+        return url.pathname + url.search;
+      }
+      function redactBody(value) {
+        if (value instanceof URLSearchParams)
+          return [...value.entries()]
+            .map(([k, v]) => k + '=' + (/token|senha|password/i.test(k) ? '[oculto]' : v))
+            .join('\n');
+        return value === undefined
+          ? ''
+          : JSON.stringify(value, (k, v) => (/token|senha|password/i.test(k) ? '[oculto]' : v), 2);
+      }
+      async function wire(path, method = 'GET', body, form = false) {
+        const headers = {
+          'Content-Type': form ? 'application/x-www-form-urlencoded' : 'application/json',
+        };
+        if (token && !form) headers.Authorization = 'Bearer ' + token;
+        if (path === prefix + '/orders' && method === 'POST')
+          headers['Idempotency-Key'] = body.order_client_id;
+        const safePath = redactUrl(path);
+        $('request').textContent =
+          method +
+          ' ' +
+          safePath +
+          '\n' +
+          JSON.stringify(
+            { ...headers, ...(headers.Authorization ? { Authorization: 'Bearer [oculto]' } : {}) },
+            null,
+            2,
+          ) +
+          '\n' +
+          redactBody(body);
+        const res = await fetch(path, {
+          method,
+          headers,
+          body: body === undefined ? undefined : form ? body.toString() : JSON.stringify(body),
+        });
+        const data = await res.json();
+        $('response').textContent =
+          method +
+          ' ' +
+          safePath +
+          ' → ' +
+          res.status +
+          '\n' +
+          JSON.stringify(data, (k, v) => (/token|senha|password/i.test(k) ? '[oculto]' : v), 2);
+        if (!res.ok || data.status === 'erro')
+          throw Error(data.message || data.mensagem || 'Falha HTTP ' + res.status);
+        return data;
+      }
+      async function legacy(route, method = 'POST', extra = {}, auth = true) {
+        const form = new URLSearchParams();
+        if (auth && legacySession) {
+          form.set('user[login]', legacySession.login);
+          form.set('user[token]', legacySession.token);
+          form.set('user[codigo_sincronizacao]', legacySession.codigo_sincronizacao);
+        }
+        for (const [k, v] of Object.entries(extra)) form.set(k, String(v));
+        const path = '/index.php?r=api/' + route;
+        return method === 'GET'
+          ? wire(path + '&' + form.toString(), 'GET', undefined, true)
+          : wire(path, 'POST', form, true);
+      }
+      async function call(path, method = 'GET', body) {
+        if ($('protocol').value !== 'legacy' || !path.startsWith(prefix)) {
+          return wire(path, method, body);
+        }
+        if (path === prefix + '/auth/login') {
+          const data = await legacy(
+            'authentication/new',
+            'POST',
+            {
+              'user[login]': body.login,
+              'user[senha]': body.password,
+              'user[imei]': 'simulator-panel',
+              'user[versao]': '0.1.0',
+            },
+            false,
+          );
+          legacySession = data;
+          const session = await legacy('session/new', 'POST', { 'user[versao]': '0.1.0' });
+          legacySession.codigo_sincronizacao = session.codigo_sincronizacao;
+          return { ...data, name: data.nome || body.login, userId: data.id_usuario };
+        }
+        if (path === prefix + '/bootstrap') {
+          const customers = await legacy('clientes/index');
+          const tables = await legacy('negociacoes/index', 'GET', { 'extras[somente_mobile]': 1 });
+          const links = await legacy('clientes/getClientesTabelasNegociacoes');
+          await legacy('produtos/index');
+          for (const customer of customers.clientes) {
+            await legacy('clientes/getDistribuidores', 'GET', { cnpj_cliente: customer.cnpj });
+          }
+          for (const table of tables.negociacoes) {
+            const link = links.vinculos.find((v) => v.id_tabela === table.id_tabela);
+            if (link)
+              await legacy('produtos/getProdutosDaTabela', 'POST', {
+                id_tabela: table.id_tabela,
+                id_cliente: link.id_cliente,
+                id_distribuidor: 501,
+              });
+          }
+          return { customers: customers.clientes, tables: tables.negociacoes };
+        }
+        if (path === prefix + '/goals') return legacy('metas/desempenhoArea');
+        if (path === prefix + '/orders' && method === 'POST') {
+          const extra = {
+            order_client_id: body.order_client_id,
+            id_cliente: body.id_cliente,
+            id_tabela: body.id_tabela,
+            datahora_criacao: sqlDate(body.datahora_criacao),
+          };
+          if (body.cupom) throw Error('Canal de cupom Legacy não documentado');
+          for (const [key, value] of Object.entries(body)) {
+            if (['codigo_pedido', 'justificativa'].includes(key)) extra[key] = value;
+          }
+          body.array_ordem_envio.forEach((d, i) => {
+            if (!d.codigo_faturamento)
+              throw Error(
+                'Informe codigo_faturamento conhecido para o prazo. Códigos CF são fictícios do laboratório.',
+              );
+            extra['ordem_envio[' + i + '][id_distribuidor]'] = d.id_distribuidor;
+            extra['ordem_envio[' + i + '][prioridade]'] = d.prioridade;
+            extra['ordem_envio[' + i + '][codigo_faturamento]'] = d.codigo_faturamento;
+          });
+          body.array_produtos.forEach((p, i) => {
+            if (typeof p.desconto !== 'number')
+              throw Error('Informe desconto numérico em cada produto.');
+            for (const key of ['ean', 'quantidade', 'desconto'])
+              extra['produtos[' + i + '][' + key + ']'] = p[key];
+          });
+          (body.array_agendamento || []).forEach((d, i) => {
+            extra['agendamento[' + i + '][data]'] = d.data_envio;
+            extra['agendamento[' + i + '][periodo]'] = d.periodo || '08:00';
+          });
+          const data = await legacy('pedidos/receberPedidoMobile', 'POST', extra);
+          return { id_pedido_gerado: data.id_pedido, erros_envio: [] };
+        }
+        if (path === prefix + '/orders') {
+          const subs = await legacy('subPedidos/index', 'POST', { time: '1970-01-01 00:00:00' });
+          await legacy('nota/index', 'POST', { time: '1970-01-01 00:00:00' });
+          const grouped = new Map();
+          for (const sub of subs.subPedidos) {
+            if (!grouped.has(sub.pedido_id))
+              grouped.set(sub.pedido_id, {
+                id: sub.pedido_id,
+                orderClientId: sub.order_client_id,
+                customerName: sub.cliente,
+                tableName: sub.tabela,
+                status: sub.status_id,
+                dataEnvio: sub.data_envio,
+              });
+          }
+          const orders = [...grouped.values()];
+          const query = {};
+          orders.forEach((o, i) => (query['pedidos[' + i + ']'] = o.id));
+          await legacy('pedidos/getStatusPedidos', 'GET', query);
+          return orders;
+        }
+        return wire(path, method, body);
+      }
 
-function action(id,fn){$(id).addEventListener('click',async()=>{const button=$(id);button.disabled=true;try{await fn()}catch(e){show(e.message)}finally{button.disabled=false}})}
-$('loginForm').onsubmit=async e=>{e.preventDefault();try{const session=await call(prefix+'/auth/login','POST',{login:$('login').value,password:$('password').value});token=session.token;$('session').textContent='Conectado · '+session.name;show('Sessão criada. Sincronize os cadastros ou envie um pedido.')}catch(e){show(e.message)}};
-action('sync',async()=>{const data=await call(prefix+'/bootstrap');show('Sincronização concluída: '+data.customers.length+' clientes e '+data.tables.length+' tabelas.')});
-action('apply',async()=>{await call('/__sim/scenario','POST',{scenario:$('scenario').value});show('Cenário aplicado: '+$('scenario').selectedOptions[0].text)});
-action('reset',async()=>{await call('/__sim/reset','POST',{});$('scenario').value='normal';show('Dados restaurados. Pedidos criados nesta sessão foram removidos.');await list()});
-action('submit',async()=>{const data=await call(prefix+'/orders','POST',JSON.parse($('payload').value));show(data.id_pedido_gerado?'Pedido '+data.id_pedido_gerado+' registrado. Reenvios iguais mantêm o ID.':'Pedido bloqueado: '+data.erros_envio.join('; '));await list()});
-action('newKey',async()=>{const payload=JSON.parse($('payload').value);payload.order_client_id=newKey();payload.datahora_criacao=new Date().toISOString();$('payload').value=JSON.stringify(payload,null,2);show('Nova chave gerada. O próximo envio criará outro pedido.')});
-async function list(){const orders=await call(prefix+'/orders');$('orders').replaceChildren();if(!orders.length){$('orders').textContent='Nenhum pedido.';return}const names={1:'Aceito',3:'Agendado',4:'Aguardando retorno',10:'Parcialmente aceito',11:'Rejeitado'};for(const order of orders){const div=document.createElement('div');div.className='order';const title=document.createElement('strong');title.textContent='#'+order.id+' · '+order.customerName;div.append(title);const desc=document.createElement('small');desc.textContent=(names[order.status]||order.status)+' · '+order.tableName+' · chave '+order.orderClientId+(order.dataEnvio?' · envio '+order.dataEnvio:'');div.append(desc,document.createElement('br'));for(const [value,label]of [['accept','Aceitar'],['partial','Aceitar parcialmente'],['reject','Rejeitar'],['invoice','Faturar']]){const button=document.createElement('button');button.className='secondary';button.textContent=label;button.onclick=async()=>{try{await call('/__sim/orders/transition','POST',{orderClientId:order.orderClientId,action:value});await list();show('Retorno do distribuidor atualizado.')}catch(e){show(e.message)}};div.append(button)}$('orders').append(div)}}
-action('list',list);action('goals',async()=>{await call(prefix+'/goals');show('Metas consultadas. Veja a resposta HTTP.')});action('logs',async()=>{const data=await call('/__sim/logs');const table=document.createElement('table');const tr=document.createElement('tr');for(const name of ['Método','Caminho','HTTP','ms']){const th=document.createElement('th');th.textContent=name;tr.append(th)}table.append(tr);for(const log of data.logs){const row=document.createElement('tr');for(const value of [log.method,log.path,log.status,log.durationMs]){const td=document.createElement('td');td.textContent=value;row.append(td)}table.append(row)}$('history').replaceChildren(table)});
-</script></body></html>
+      function action(id, fn) {
+        $(id).addEventListener('click', async () => {
+          const button = $(id);
+          button.disabled = true;
+          try {
+            await fn();
+          } catch (e) {
+            show(e.message);
+          } finally {
+            button.disabled = false;
+          }
+        });
+      }
+      $('loginForm').onsubmit = async (e) => {
+        e.preventDefault();
+        try {
+          const session = await call(prefix + '/auth/login', 'POST', {
+            login: $('login').value,
+            password: $('password').value,
+          });
+          token = session.token;
+          $('session').textContent = 'Conectado · ' + session.name;
+          show('Sessão criada. Sincronize os cadastros ou envie um pedido.');
+        } catch (e) {
+          show(e.message);
+        }
+      };
+      action('sync', async () => {
+        const data = await call(prefix + '/bootstrap');
+        show(
+          'Sincronização concluída: ' +
+            data.customers.length +
+            ' clientes e ' +
+            data.tables.length +
+            ' tabelas.',
+        );
+      });
+      action('apply', async () => {
+        await call('/__sim/scenario', 'POST', { scenario: $('scenario').value });
+        show('Cenário aplicado: ' + $('scenario').selectedOptions[0].text);
+      });
+      action('reset', async () => {
+        await call('/__sim/reset', 'POST', {});
+        $('scenario').value = 'normal';
+        show('Dados restaurados. Pedidos criados nesta sessão foram removidos.');
+        await list();
+      });
+      action('submit', async () => {
+        const data = await call(prefix + '/orders', 'POST', JSON.parse($('payload').value));
+        show(
+          data.id_pedido_gerado
+            ? 'Pedido ' + data.id_pedido_gerado + ' registrado. Reenvios iguais mantêm o ID.'
+            : 'Pedido bloqueado: ' + data.erros_envio.join('; '),
+        );
+        await list();
+      });
+      action('newKey', async () => {
+        const payload = JSON.parse($('payload').value);
+        payload.order_client_id = newKey();
+        payload.datahora_criacao = new Date().toISOString();
+        $('payload').value = JSON.stringify(payload, null, 2);
+        show('Nova chave gerada. O próximo envio criará outro pedido.');
+      });
+      async function list() {
+        const orders = await call(prefix + '/orders');
+        $('orders').replaceChildren();
+        if (!orders.length) {
+          $('orders').textContent = 'Nenhum pedido.';
+          return;
+        }
+        const names = {
+          1: 'Aceito',
+          3: 'Agendado',
+          4: 'Aguardando retorno',
+          10: 'Parcialmente aceito',
+          11: 'Rejeitado',
+        };
+        for (const order of orders) {
+          const div = document.createElement('div');
+          div.className = 'order';
+          const title = document.createElement('strong');
+          title.textContent = '#' + order.id + ' · ' + order.customerName;
+          div.append(title);
+          const desc = document.createElement('small');
+          desc.textContent =
+            (names[order.status] || order.status) +
+            ' · ' +
+            order.tableName +
+            ' · chave ' +
+            order.orderClientId +
+            (order.dataEnvio ? ' · envio ' + order.dataEnvio : '');
+          div.append(desc, document.createElement('br'));
+          for (const [value, label] of [
+            ['accept', 'Aceitar'],
+            ['partial', 'Aceitar parcialmente'],
+            ['reject', 'Rejeitar'],
+            ['invoice', 'Faturar'],
+          ]) {
+            const button = document.createElement('button');
+            button.className = 'secondary';
+            button.textContent = label;
+            button.onclick = async () => {
+              try {
+                await call('/__sim/orders/transition', 'POST', {
+                  orderClientId: order.orderClientId,
+                  action: value,
+                });
+                await list();
+                show('Retorno do distribuidor atualizado.');
+              } catch (e) {
+                show(e.message);
+              }
+            };
+            div.append(button);
+          }
+          $('orders').append(div);
+        }
+      }
+      action('list', list);
+      action('goals', async () => {
+        await call(prefix + '/goals');
+        show('Metas consultadas. Veja a resposta HTTP.');
+      });
+      action('logs', async () => {
+        const data = await call('/__sim/logs');
+        const table = document.createElement('table');
+        const tr = document.createElement('tr');
+        for (const name of ['Método', 'Caminho', 'HTTP', 'ms']) {
+          const th = document.createElement('th');
+          th.textContent = name;
+          tr.append(th);
+        }
+        table.append(tr);
+        for (const log of data.logs) {
+          const row = document.createElement('tr');
+          for (const value of [log.method, log.path, log.status, log.durationMs]) {
+            const td = document.createElement('td');
+            td.textContent = value;
+            row.append(td);
+          }
+          table.append(row);
+        }
+        $('history').replaceChildren(table);
+      });
+    </script>
+  </body>
+</html>

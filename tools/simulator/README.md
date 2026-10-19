@@ -54,13 +54,13 @@ O laboratório comprova deduplicação forte por chave/payload; o backend legado
 
 ## Contrato Mobile v1 opcional
 
-| Método | Caminho | Resposta |
-|---|---|---|
-| POST | `/api/mobile/v1/auth/login` | `{token,userId,name}`; corpo `{login,password}` |
-| GET | `/api/mobile/v1/bootstrap` | `{user,customers,tables,coupons,goals,flags}` |
-| POST | `/api/mobile/v1/orders` | `SubmitOrderResult`; corpo `SubmitOrderPayload` |
-| GET | `/api/mobile/v1/orders` | `TrackedOrder[]` |
-| GET | `/api/mobile/v1/goals` | `Goals` |
+| Método | Caminho                     | Resposta                                        |
+| ------ | --------------------------- | ----------------------------------------------- |
+| POST   | `/api/mobile/v1/auth/login` | `{token,userId,name}`; corpo `{login,password}` |
+| GET    | `/api/mobile/v1/bootstrap`  | `{user,customers,tables,coupons,goals,flags}`   |
+| POST   | `/api/mobile/v1/orders`     | `SubmitOrderResult`; corpo `SubmitOrderPayload` |
+| GET    | `/api/mobile/v1/orders`     | `TrackedOrder[]`                                |
+| GET    | `/api/mobile/v1/goals`      | `Goals`                                         |
 
 No protocolo Mobile v1, todas as rotas de dados e controle exigem `Authorization: Bearer <token>`. Login, painel e `/health` são públicos. Envio de pedido exige `Idempotency-Key` igual a `order_client_id`; repetir a chave com conteúdo diferente retorna 409. Pedidos bloqueados pelas regras comerciais retornam HTTP 200 e `id_pedido_gerado: 0`, com `erros_envio`.
 

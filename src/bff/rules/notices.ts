@@ -1,6 +1,10 @@
 import type { StatusNotice } from './types';
 
-export function acceptanceNotice(input: { orderId: number; distributorName: string; at: string }): StatusNotice {
+export function acceptanceNotice(input: {
+  orderId: number;
+  distributorName: string;
+  at: string;
+}): StatusNotice {
   return {
     id: `aceite-${input.orderId}-${input.at}`,
     orderId: input.orderId,

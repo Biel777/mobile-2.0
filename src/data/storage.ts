@@ -16,7 +16,12 @@ type Tokens = {
 };
 
 /** Preserve account data when only the transport namespace or area field changed. */
-export function createAppStorage(cache: CacheStorage, tokens: Tokens, platform: string, config = apiConfig) {
+export function createAppStorage(
+  cache: CacheStorage,
+  tokens: Tokens,
+  platform: string,
+  config = apiConfig,
+) {
   const tokenKey = `sales-token-${config.mode}-${config.protocol}-${encodeURIComponent(config.baseUrl).replace(/[^a-zA-Z0-9._-]/g, '_')}`;
   const prefix = `forca-vendas-v5-${config.mode}-`;
   const suffix = `-${config.baseUrl}`;
@@ -33,7 +38,14 @@ export function createAppStorage(cache: CacheStorage, tokens: Tokens, platform: 
       let raw = await cache.getItem(key);
       let recovered = false;
       if (!raw && key === currentKey && config.protocol === 'legacy') {
-        const candidates = (await cache.getAllKeys()).filter(candidate => candidate !== key && !candidate.startsWith(`${prefix}mobile-v1-`) && candidate.startsWith(prefix) && candidate.endsWith(suffix) && candidate.length > prefix.length + suffix.length);
+        const candidates = (await cache.getAllKeys()).filter(
+          (candidate) =>
+            candidate !== key &&
+            !candidate.startsWith(`${prefix}mobile-v1-`) &&
+            candidate.startsWith(prefix) &&
+            candidate.endsWith(suffix) &&
+            candidate.length > prefix.length + suffix.length,
+        );
         // Do not choose between multiple transport histories or cross tenant/account boundaries.
         if (candidates.length === 1) {
           raw = await cache.getItem(candidates[0]);
@@ -45,13 +57,22 @@ export function createAppStorage(cache: CacheStorage, tokens: Tokens, platform: 
       const customers = data.state?.catalog?.customers;
       if (Array.isArray(customers)) {
         for (const customer of customers) {
-          if (!customer || typeof customer !== 'object' || typeof customer.hasSalesArea === 'boolean') continue;
-          const previous = Object.entries(customer).filter(([field, value]) => /^has.+Area$/.test(field) && typeof value === 'boolean');
+          if (
+            !customer ||
+            typeof customer !== 'object' ||
+            typeof customer.hasSalesArea === 'boolean'
+          )
+            continue;
+          const previous = Object.entries(customer).filter(
+            ([field, value]) => /^has.+Area$/.test(field) && typeof value === 'boolean',
+          );
           if (previous.length === 1) customer.hasSalesArea = previous[0][1];
         }
       }
       // A recovered namespace never guesses a previous secure token key.
-      if (data.state?.session) data.state.session.token = platform === 'web' || recovered ? '' : (await tokens.getItemAsync(tokenKey)) ?? '';
+      if (data.state?.session)
+        data.state.session.token =
+          platform === 'web' || recovered ? '' : ((await tokens.getItemAsync(tokenKey)) ?? '');
       return JSON.stringify(data);
     },
     setItem(key: string, raw: string) {

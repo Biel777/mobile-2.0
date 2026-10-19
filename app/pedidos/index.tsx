@@ -8,7 +8,9 @@ import { money } from '@bff/cases/sales';
 import { statusLabel } from '@bff/cases/sales';
 import { colors, fonts, radius, space } from '../../src/theme';
 
-function orderNet(items: { unitPrice: number; discountPercent: number; quantNot: number; quantPed: number }[]) {
+function orderNet(
+  items: { unitPrice: number; discountPercent: number; quantNot: number; quantPed: number }[],
+) {
   return items.reduce((sum, item) => {
     const qty = item.quantNot || item.quantPed;
     return sum + qty * item.unitPrice * (1 - item.discountPercent / 100);
@@ -24,61 +26,75 @@ function PedidosScreen() {
 
   return (
     <View style={styles.screen}>
-    <ScrollView contentContainerStyle={styles.content}>
-      {!online ? <Banner text="Offline — a lista local permanece visível." /> : null}
-      <Text style={styles.section}>Neste aparelho</Text>
-      {orders.length === 0 ? <Text style={styles.empty}>Nenhum rascunho neste aparelho.</Text> : null}
-      {orders.map((order) => {
-        const customer = catalog.customers.find((item) => item.id === order.customerId);
-        const table = catalog.tables.find((item) => item.id === order.tableId);
-        const ordem = order.distributorIds?.length ?? 0;
-        return (
-          <Pressable key={order.id} onPress={() => router.push(`/pedido/${order.id}`)}>
-            <View style={{ marginBottom: space.sm }}>
-              <Card>
-                <Text style={styles.pill}>{order.queueStatus === 'sending' ? 'Enviando…' : order.queueStatus === 'pending' ? 'Na fila' : order.queueStatus === 'failed' ? 'Falha no envio' : order.queueStatus === 'sent' ? 'Enviado' : statusLabel(order.localStatus)}</Text>
-                <Text style={styles.name}>{customer?.name ?? order.customerName ?? 'Loja selecionada'}</Text>
-                <Text style={styles.meta}>
-                  {table?.name ?? 'Sem condição'} · {ordem} distribuidor(es)
-                </Text>
-                {order.lastError ? <Banner tone="danger" text={order.lastError} /> : null}
-              </Card>
-            </View>
-          </Pressable>
-        );
-      })}
+      <ScrollView contentContainerStyle={styles.content}>
+        {!online ? <Banner text="Offline — a lista local permanece visível." /> : null}
+        <Text style={styles.section}>Neste aparelho</Text>
+        {orders.length === 0 ? (
+          <Text style={styles.empty}>Nenhum rascunho neste aparelho.</Text>
+        ) : null}
+        {orders.map((order) => {
+          const customer = catalog.customers.find((item) => item.id === order.customerId);
+          const table = catalog.tables.find((item) => item.id === order.tableId);
+          const ordem = order.distributorIds?.length ?? 0;
+          return (
+            <Pressable key={order.id} onPress={() => router.push(`/pedido/${order.id}`)}>
+              <View style={{ marginBottom: space.sm }}>
+                <Card>
+                  <Text style={styles.pill}>
+                    {order.queueStatus === 'sending'
+                      ? 'Enviando…'
+                      : order.queueStatus === 'pending'
+                        ? 'Na fila'
+                        : order.queueStatus === 'failed'
+                          ? 'Falha no envio'
+                          : order.queueStatus === 'sent'
+                            ? 'Enviado'
+                            : statusLabel(order.localStatus)}
+                  </Text>
+                  <Text style={styles.name}>
+                    {customer?.name ?? order.customerName ?? 'Loja selecionada'}
+                  </Text>
+                  <Text style={styles.meta}>
+                    {table?.name ?? 'Sem condição'} · {ordem} distribuidor(es)
+                  </Text>
+                  {order.lastError ? <Banner tone="danger" text={order.lastError} /> : null}
+                </Card>
+              </View>
+            </Pressable>
+          );
+        })}
 
-      <Text style={[styles.section, { marginTop: space.lg }]}>Enviados</Text>
-      <GhostButton
-        title="Atualizar status"
-        onPress={() => {
-          void pullUpdates();
-        }}
-      />
-      <View style={{ height: space.sm }} />
-      {tracked.map((order) => {
-        const subs = order.subOrders ?? [];
-        const net = subs.reduce((sum, sub) => sum + orderNet(sub.items), 0);
-        const invoiced = subs.filter((sub) => sub.invoice).length;
-        return (
-          <Pressable key={order.id} onPress={() => router.push(`/pedidos/${order.id}`)}>
-            <View style={{ marginBottom: space.sm }}>
-              <Card>
-                <View style={styles.row}>
-                  <Text style={styles.pill}>{statusLabel(order.status)}</Text>
-                  <Text style={styles.value}>{money(net)}</Text>
-                </View>
-                <Text style={styles.name}>{order.customerName}</Text>
-                <Text style={styles.meta}>
-                  Pedido {order.id} · {invoiced} de {subs.length} com nota
-                </Text>
-              </Card>
-            </View>
-          </Pressable>
-        );
-      })}
-    </ScrollView>
-    <TabBar />
+        <Text style={[styles.section, { marginTop: space.lg }]}>Enviados</Text>
+        <GhostButton
+          title="Atualizar status"
+          onPress={() => {
+            void pullUpdates();
+          }}
+        />
+        <View style={{ height: space.sm }} />
+        {tracked.map((order) => {
+          const subs = order.subOrders ?? [];
+          const net = subs.reduce((sum, sub) => sum + orderNet(sub.items), 0);
+          const invoiced = subs.filter((sub) => sub.invoice).length;
+          return (
+            <Pressable key={order.id} onPress={() => router.push(`/pedidos/${order.id}`)}>
+              <View style={{ marginBottom: space.sm }}>
+                <Card>
+                  <View style={styles.row}>
+                    <Text style={styles.pill}>{statusLabel(order.status)}</Text>
+                    <Text style={styles.value}>{money(net)}</Text>
+                  </View>
+                  <Text style={styles.name}>{order.customerName}</Text>
+                  <Text style={styles.meta}>
+                    Pedido {order.id} · {invoiced} de {subs.length} com nota
+                  </Text>
+                </Card>
+              </View>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+      <TabBar />
     </View>
   );
 }

@@ -1,7 +1,18 @@
-import type { CommercialTable, Coupon, Customer, FlagGoal, Goals, SubmitOrderPayload, SubmitOrderResult, TrackedOrder } from '@rules/types';
+import type {
+  CommercialTable,
+  Coupon,
+  Customer,
+  FlagGoal,
+  Goals,
+  SubmitOrderPayload,
+  SubmitOrderResult,
+  TrackedOrder,
+} from '@rules/types';
 
 export type Session = {
-  token: string; userId: number; name: string;
+  token: string;
+  userId: number;
+  name: string;
   login?: string;
   codigoSincronizacao?: string;
   imei?: string;

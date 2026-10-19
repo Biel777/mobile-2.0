@@ -20,7 +20,9 @@ function MetasScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.kicker}>Falta no ciclo · {goals.periodLabel}</Text>
         <Text style={styles.hero}>{moneyShort(missing)}</Text>
-        <Text style={styles.meta}>{pct}% de {money(goals.metaValor)}</Text>
+        <Text style={styles.meta}>
+          {pct}% de {money(goals.metaValor)}
+        </Text>
         <View style={styles.track}>
           <View style={[styles.fill, { width: `${Math.min(pct, 100)}%` }]} />
         </View>
@@ -58,7 +60,13 @@ const styles = StyleSheet.create({
   meta: { color: colors.text, fontFamily: fonts.body, marginTop: 4 },
   name: { fontFamily: fonts.display, color: colors.ink, fontSize: 18 },
   split: { flexDirection: 'row', gap: 8, marginTop: space.md },
-  track: { height: 8, backgroundColor: colors.lineSoft, borderRadius: 99, marginTop: 12, overflow: 'hidden' },
+  track: {
+    height: 8,
+    backgroundColor: colors.lineSoft,
+    borderRadius: 99,
+    marginTop: 12,
+    overflow: 'hidden',
+  },
   fill: { height: 8, backgroundColor: colors.yellow },
   fillTeal: { height: 8, backgroundColor: colors.teal },
 });

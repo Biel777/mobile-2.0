@@ -23,13 +23,23 @@ function RevisaoScreen() {
   }
 
   const customer = catalog.customers.find((item) => item.id === order.customerId);
-  const table = resolveOrderTable(catalog.tables.find((item) => item.id === order.tableId), order);
+  const table = resolveOrderTable(
+    catalog.tables.find((item) => item.id === order.tableId),
+    order,
+  );
   if (!customer || !table) {
     return <Banner tone="danger" text="Cadastro incompleto no cache." />;
   }
 
   const coupon = catalog.coupons.find((item) => item.code === order.couponCode);
-  const { quote, issues, month, minLeft, canSubmit: ok, scheduled } = reviewOrder({ order, table, customer, coupon });
+  const {
+    quote,
+    issues,
+    month,
+    minLeft,
+    canSubmit: ok,
+    scheduled,
+  } = reviewOrder({ order, table, customer, coupon });
   const ordem = (order.distributorIds ?? [])
     .map((distributorId) => customer.distributors.find((item) => item.id === distributorId))
     .filter((item): item is NonNullable<typeof item> => Boolean(item));
@@ -38,7 +48,9 @@ function RevisaoScreen() {
   return (
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content}>
-        {!online ? <Banner text="Sem internet: o pedido entra na fila e será enviado ao reconectar." /> : null}
+        {!online ? (
+          <Banner text="Sem internet: o pedido entra na fila e será enviado ao reconectar." />
+        ) : null}
 
         <Card>
           <Text style={styles.kicker}>Cliente</Text>
@@ -64,11 +76,16 @@ function RevisaoScreen() {
         <Card>
           <View style={styles.head}>
             <Text style={styles.section}>Ordem de envio</Text>
-            <Pressable accessibilityRole="button" onPress={() => router.push(`/pedido/${order.id}?step=2`)}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push(`/pedido/${order.id}?step=2`)}
+            >
               <Text style={styles.link}>Alterar</Text>
             </Pressable>
           </View>
-          {ordem.length === 0 ? <Text style={styles.meta}>Nenhum distribuidor selecionado.</Text> : null}
+          {ordem.length === 0 ? (
+            <Text style={styles.meta}>Nenhum distribuidor selecionado.</Text>
+          ) : null}
           {ordem.map((item, index) => (
             <View key={item.id} style={styles.distRow}>
               <View style={styles.rank}>
@@ -86,7 +103,10 @@ function RevisaoScreen() {
         <Card>
           <Text style={styles.section}>Quando enviar</Text>
           <View style={styles.row}>
-            <Pressable accessibilityRole="button" onPress={() => updateDraft(order.id, { scheduleDates: [] })}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => updateDraft(order.id, { scheduleDates: [] })}
+            >
               <Text style={[styles.chip, dates.length === 0 && styles.chipOn]}>Agora</Text>
             </Pressable>
             <Pressable
@@ -106,14 +126,21 @@ function RevisaoScreen() {
               }
             />
           ) : null}
-          {scheduled.map(part => <Text key={part.date} style={styles.meta}>{part.date}: {part.lines.reduce((sum, line) => sum + line.quantity, 0)} unidades (prévia)</Text>)}
+          {scheduled.map((part) => (
+            <Text key={part.date} style={styles.meta}>
+              {part.date}: {part.lines.reduce((sum, line) => sum + line.quantity, 0)} unidades
+              (prévia)
+            </Text>
+          ))}
           {table.dividePedido && dates.length > 0 ? (
             <TextInput
               value={dates[1] ?? ''}
               placeholder="Segunda data para dividir"
               style={styles.input}
               onChangeText={(value) =>
-                updateDraft(order.id, { scheduleDates: value ? [dates[0] ?? '', value] : [dates[0] ?? ''] })
+                updateDraft(order.id, {
+                  scheduleDates: value ? [dates[0] ?? '', value] : [dates[0] ?? ''],
+                })
               }
             />
           ) : null}
@@ -123,11 +150,16 @@ function RevisaoScreen() {
         <Card>
           <View style={styles.head}>
             <Text style={styles.section}>Itens ({quote.lines.length})</Text>
-            <Pressable accessibilityRole="button" onPress={() => router.push(`/pedido/${order.id}?step=3`)}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push(`/pedido/${order.id}?step=3`)}
+            >
               <Text style={styles.link}>Editar quantidades</Text>
             </Pressable>
           </View>
-          {quote.lines.length === 0 ? <Text style={styles.meta}>Nenhum produto no pedido.</Text> : null}
+          {quote.lines.length === 0 ? (
+            <Text style={styles.meta}>Nenhum produto no pedido.</Text>
+          ) : null}
           {quote.lines.map((line) => {
             const product = table.products.find((item) => item.ean === line.ean);
             return (
@@ -187,10 +219,20 @@ function RevisaoScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.page },
   content: { padding: space.md, paddingBottom: 24 },
-  kicker: { color: colors.teal, fontFamily: fonts.bodyStrong, fontSize: 12, textTransform: 'uppercase' },
+  kicker: {
+    color: colors.teal,
+    fontFamily: fonts.bodyStrong,
+    fontSize: 12,
+    textTransform: 'uppercase',
+  },
   clientName: { fontFamily: fonts.displayBold, fontSize: 18, color: colors.ink, marginTop: 4 },
   section: { fontFamily: fonts.display, fontSize: 16, color: colors.ink },
-  head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  head: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
   link: { color: colors.teal, fontFamily: fonts.bodyStrong, fontSize: 14 },
   line: { color: colors.ink, fontFamily: fonts.bodyStrong },
   meta: { color: colors.text, fontFamily: fonts.body, marginTop: 4 },
@@ -205,7 +247,14 @@ const styles = StyleSheet.create({
   },
   rankText: { color: colors.onPrimary, fontFamily: fonts.bodyStrong, fontSize: 13 },
   distName: { fontFamily: fonts.bodyStrong, color: colors.ink, fontSize: 15 },
-  item: { flexDirection: 'row', gap: 10, marginTop: space.sm, paddingTop: space.sm, borderTopWidth: 1, borderTopColor: colors.lineSoft },
+  item: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: space.sm,
+    paddingTop: space.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.lineSoft,
+  },
   itemName: { fontFamily: fonts.bodyStrong, color: colors.ink },
   itemNet: { marginTop: 2, fontFamily: fonts.displayBold, color: colors.ink },
   total: { fontSize: 22, fontFamily: fonts.displayBold, color: colors.ink },

@@ -5,7 +5,12 @@ import { HomeIcon } from './icons';
 
 export function HeaderActions() {
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel="Início" style={styles.home} onPress={() => router.replace('/')}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Início"
+      style={styles.home}
+      onPress={() => router.replace('/')}
+    >
       <HomeIcon color={colors.onPrimary} size={22} />
     </Pressable>
   );

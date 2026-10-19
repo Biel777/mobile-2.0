@@ -39,17 +39,24 @@ function PedidoDetalheScreen() {
       <Text style={styles.kicker}>Pedido {order.id}</Text>
       <Text style={styles.title}>{order.customerName}</Text>
       <Text style={styles.meta}>{order.tableName}</Text>
-      <View style={{ marginTop: space.md }}><OrderProgress order={order} /></View>
+      <View style={{ marginTop: space.md }}>
+        <OrderProgress order={order} />
+      </View>
       {order.status === 14 ? (
         <Pressable onPress={() => router.push('/bandeira')}>
           <Banner text="Aguardando o mínimo da bandeira. Toque para ver a cesta do grupo." />
         </Pressable>
       ) : null}
-      {order.status === 3 && order.dataEnvio ? <Banner text={`Envio agendado para ${order.dataEnvio}.`} /> : null}
+      {order.status === 3 && order.dataEnvio ? (
+        <Banner text={`Envio agendado para ${order.dataEnvio}.`} />
+      ) : null}
 
       <Text style={styles.section}>Subpedidos</Text>
       {subs.map((sub) => {
-        const net = sub.items.reduce((sum, item) => sum + lineNet(item, item.quantNot || item.quantPed), 0);
+        const net = sub.items.reduce(
+          (sum, item) => sum + lineNet(item, item.quantNot || item.quantPed),
+          0,
+        );
         return (
           <View key={sub.id} style={{ marginBottom: space.sm }}>
             <Card>
@@ -57,7 +64,9 @@ function PedidoDetalheScreen() {
                 <Text style={styles.name}>{sub.distributorName}</Text>
                 <Text style={styles.status}>{statusLabel(sub.status)}</Text>
               </View>
-              <Text style={styles.meta}>Subpedido {sub.id} · prazo {sub.prazo} dias</Text>
+              <Text style={styles.meta}>
+                Subpedido {sub.id} · prazo {sub.prazo} dias
+              </Text>
               {sub.items.map((item) => (
                 <View key={item.ean} style={styles.item}>
                   <View style={styles.itemHead}>
@@ -65,7 +74,9 @@ function PedidoDetalheScreen() {
                       name={item.name}
                       size={48}
                       restricted={catalog.tables.some((table) =>
-                        table.products.some((product) => product.ean === item.ean && product.photoRestricted),
+                        table.products.some(
+                          (product) => product.ean === item.ean && product.photoRestricted,
+                        ),
                       )}
                     />
                     <Text style={[styles.itemName, { flex: 1 }]}>{item.name}</Text>
@@ -76,7 +87,9 @@ function PedidoDetalheScreen() {
                   <Text style={styles.meta}>
                     Pedido {item.quantPed} · Atendido {item.quantEsp} · Faturado {item.quantNot}
                   </Text>
-                  <Text style={styles.price}>Líquido {money(lineNet(item, item.quantNot || item.quantPed))}</Text>
+                  <Text style={styles.price}>
+                    Líquido {money(lineNet(item, item.quantNot || item.quantPed))}
+                  </Text>
                   {item.reason ? <Banner text={item.reason} /> : null}
                 </View>
               ))}
@@ -91,7 +104,13 @@ function PedidoDetalheScreen() {
                   </Text>
                 </Pressable>
               ) : (
-                <Text style={styles.meta}>{[6, 11, 12].includes(sub.status) ? 'Tentativa encerrada sem nota fiscal' : [1, 5, 10].includes(sub.status) && sub.items.some(item => item.quantEsp > 0) ? 'Aguardando nota fiscal' : 'Nota fiscal ainda não disponível'}</Text>
+                <Text style={styles.meta}>
+                  {[6, 11, 12].includes(sub.status)
+                    ? 'Tentativa encerrada sem nota fiscal'
+                    : [1, 5, 10].includes(sub.status) && sub.items.some((item) => item.quantEsp > 0)
+                      ? 'Aguardando nota fiscal'
+                      : 'Nota fiscal ainda não disponível'}
+                </Text>
               )}
             </Card>
           </View>
@@ -125,12 +144,23 @@ const styles = StyleSheet.create({
   pillText: { color: colors.tealPressed, fontFamily: fonts.bodyStrong, fontSize: 12 },
   kicker: { color: colors.teal, fontFamily: fonts.bodyStrong },
   title: { fontSize: 24, fontFamily: fonts.displayBold, color: colors.ink },
-  section: { fontFamily: fonts.display, fontSize: 16, color: colors.ink, marginTop: space.md, marginBottom: space.sm },
+  section: {
+    fontFamily: fonts.display,
+    fontSize: 16,
+    color: colors.ink,
+    marginTop: space.md,
+    marginBottom: space.sm,
+  },
   meta: { color: colors.text, fontFamily: fonts.body, marginTop: 2 },
   row: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
   name: { fontFamily: fonts.display, color: colors.ink, fontSize: 16, flex: 1 },
   status: { color: colors.teal, fontFamily: fonts.bodyStrong, fontSize: 12 },
-  item: { marginTop: space.sm, paddingTop: space.sm, borderTopWidth: 1, borderTopColor: colors.lineSoft },
+  item: {
+    marginTop: space.sm,
+    paddingTop: space.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.lineSoft,
+  },
   itemHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   itemName: { fontFamily: fonts.bodyStrong, color: colors.ink },
   price: { marginTop: 4, color: colors.ink, fontFamily: fonts.bodyStrong },

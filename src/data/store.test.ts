@@ -4,19 +4,33 @@ import { apiConfig } from '@tradetools/config';
 import * as api from '@tradetools/index';
 import { fixtures } from './fixtures';
 import type { SalesApiClient } from '@tradetools/client';
-vi.mock('./storage', () => ({ appStorage: { getItem: async () => null, setItem: async () => {}, removeItem: async () => {} } }));
-afterEach(() => { apiConfig.protocol = 'mobile-v1'; });
+vi.mock('./storage', () => ({
+  appStorage: { getItem: async () => null, setItem: async () => {}, removeItem: async () => {} },
+}));
+afterEach(() => {
+  apiConfig.protocol = 'mobile-v1';
+});
 
 const memory = () => {
   const values = new Map<string, string>();
-  return { getItem: async (key: string) => values.get(key) ?? null,
-    setItem: async (key: string, value: string) => { values.set(key, value); },
-    removeItem: async (key: string) => { values.delete(key); } };
+  return {
+    getItem: async (key: string) => values.get(key) ?? null,
+    setItem: async (key: string, value: string) => {
+      values.set(key, value);
+    },
+    removeItem: async (key: string) => {
+      values.delete(key);
+    },
+  };
 };
 function setup() {
   const { tracked, ...bootstrap } = fixtures;
   const client: SalesApiClient = {
-    login: vi.fn(async () => ({ token: 'test-token', userId: fixtures.user.id, name: fixtures.user.name })),
+    login: vi.fn(async () => ({
+      token: 'test-token',
+      userId: fixtures.user.id,
+      name: fixtures.user.name,
+    })),
     getBootstrap: vi.fn(async () => structuredClone(bootstrap)),
     listOrders: vi.fn(async () => structuredClone(tracked)),
     getGoals: vi.fn(async () => fixtures.goals),
@@ -25,17 +39,21 @@ function setup() {
   const store = createAppStore(memory(), client);
   return { store, client };
 }
-const tick = () => new Promise(resolve => setTimeout(resolve, 0));
+const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 describe('integração da carteira e fila', () => {
-
   it('revoga os getters do cliente antigo para que uma sync atrasada não use token do novo host', async () => {
     const storage = memory();
     const { client } = setup();
     const factory = vi.spyOn(api, 'createSalesApiClient').mockReturnValue(client);
     try {
       const store = createAppStore(storage, undefined, true);
-      const first = { ...apiConfig, mode: 'http' as const, protocol: 'legacy' as const, baseUrl: 'http://first/webol' };
+      const first = {
+        ...apiConfig,
+        mode: 'http' as const,
+        protocol: 'legacy' as const,
+        baseUrl: 'http://first/webol',
+      };
       await store.configure(first, storage);
       store.setState({ session: { token: 'first-token', userId: 77, name: 'Conta' } });
       const oldOptions = factory.mock.calls[0][0]!;
@@ -45,14 +63,21 @@ describe('integração da carteira e fila', () => {
       expect(oldOptions.getSession?.()).toBeNull();
       expect(oldOptions.getToken?.()).toBeUndefined();
       expect(factory.mock.calls[1][0]?.getSession?.()?.token).toBe('second-token');
-    } finally { factory.mockRestore(); }
+    } finally {
+      factory.mockRestore();
+    }
   });
 
   it('isola destinos, restaura rascunhos ao voltar e nunca carrega o token do outro host', async () => {
     const storage = memory();
     const { client } = setup();
     const store = createAppStore(storage, client, true);
-    const first = { ...apiConfig, mode: 'http' as const, protocol: 'legacy' as const, baseUrl: 'http://first/webol' };
+    const first = {
+      ...apiConfig,
+      mode: 'http' as const,
+      protocol: 'legacy' as const,
+      baseUrl: 'http://first/webol',
+    };
     const second = { ...first, baseUrl: 'https://second/tenant/webol' };
     await store.configure(first, storage);
     await store.getState().login('marina', 'demo');
@@ -73,7 +98,10 @@ describe('integração da carteira e fila', () => {
     const config = { ...apiConfig, baseUrl: 'http://device/webol' };
     const name = `forca-vendas-v5-${config.mode}-${config.protocol}-${config.baseUrl}`;
     const session = { token: 'secure-token', userId: 77, name: 'Conta' };
-    await storage.setItem(name, JSON.stringify({ state: { session, orders: [], catalog: fixtures }, version: 0 }));
+    await storage.setItem(
+      name,
+      JSON.stringify({ state: { session, orders: [], catalog: fixtures }, version: 0 }),
+    );
     const store = createAppStore(storage, client, true);
     store.getState().setOnline(false);
     await store.configure(config, storage, config.baseUrl, true);
@@ -106,14 +134,18 @@ describe('integração da carteira e fila', () => {
   it('reconcilia ID remoto confirmado sem refazer o POST Legacy', async () => {
     apiConfig.protocol = 'legacy';
     const { store, client } = setup();
-    client.getOrderStatus = vi.fn().mockRejectedValueOnce(new Error('Status ainda indisponível'))
+    client.getOrderStatus = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('Status ainda indisponível'))
       .mockResolvedValue({ id_pedido_gerado: 777, id_status: 4, erros_envio: [] });
     await store.getState().login('marina', 'demo');
     store.getState().setOnline(false);
     const id = store.getState().createDraft(11, 101);
     store.getState().updateDraft(id, { distributorIds: [501], prazos: { 501: 21 } });
     store.getState().enqueue(id);
-    vi.mocked(client.submitOrder).mockRejectedValueOnce(Object.assign(new Error('Status pendente'), { code: 'STATUS_PENDING', remoteId: 777 }));
+    vi.mocked(client.submitOrder).mockRejectedValueOnce(
+      Object.assign(new Error('Status pendente'), { code: 'STATUS_PENDING', remoteId: 777 }),
+    );
     store.getState().setOnline(true);
     await tick();
     expect(store.getState().orders[0].remoteId).toBe(777);
@@ -131,7 +163,11 @@ describe('integração da carteira e fila', () => {
     const id = store.getState().createDraft(11, 101);
     store.getState().updateDraft(id, { distributorIds: [501], prazos: { 501: 21 } });
     store.getState().enqueue(id);
-    vi.mocked(client.submitOrder).mockResolvedValueOnce({ id_pedido_gerado: 0, id_status: 7, erros_envio: ['Mínimo não atingido'] });
+    vi.mocked(client.submitOrder).mockResolvedValueOnce({
+      id_pedido_gerado: 0,
+      id_status: 7,
+      erros_envio: ['Mínimo não atingido'],
+    });
     store.getState().setOnline(true);
     await tick();
     expect(store.getState().orders[0].deliveryUncertain).toBe(false);
@@ -143,12 +179,15 @@ describe('integração da carteira e fila', () => {
   it('persiste código da sessão renovada antes de sincronizar Legacy', async () => {
     const { store, client } = setup();
     await store.getState().login('marina', 'demo');
-    client.refreshSession = vi.fn(async () => ({ ...store.getState().session!, login: 'marina', codigoSincronizacao: '222' }));
+    client.refreshSession = vi.fn(async () => ({
+      ...store.getState().session!,
+      login: 'marina',
+      codigoSincronizacao: '222',
+    }));
     await store.getState().pullUpdates();
     expect(store.getState().session?.codigoSincronizacao).toBe('222');
     expect(client.refreshSession).toHaveBeenCalledTimes(1);
   });
-
 
   it('interrompe o lote quando a sessão muda durante o primeiro envio', async () => {
     const { store, client } = setup();
@@ -160,7 +199,12 @@ describe('integração da carteira e fila', () => {
       store.getState().enqueue(id);
     }
     let done!: (value: Awaited<ReturnType<SalesApiClient['submitOrder']>>) => void;
-    vi.mocked(client.submitOrder).mockImplementationOnce(() => new Promise(resolve => { done = resolve; }));
+    vi.mocked(client.submitOrder).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          done = resolve;
+        }),
+    );
     store.getState().setOnline(true);
     await tick();
     store.getState().logout();
@@ -175,7 +219,11 @@ describe('integração da carteira e fila', () => {
     await store.getState().login('marina', 'demo');
     store.getState().setOnline(false);
     const id = store.getState().createDraft(11, 101);
-    store.getState().updateDraft(id, { distributorIds: [501], prazos: { 501: 21 }, lines: [{ ean: '78910001', quantity: 120 }] });
+    store.getState().updateDraft(id, {
+      distributorIds: [501],
+      prazos: { 501: 21 },
+      lines: [{ ean: '78910001', quantity: 120 }],
+    });
     store.getState().enqueue(id);
     vi.mocked(client.submitOrder).mockRejectedValueOnce(new Error('Confirmação perdida'));
     store.getState().setOnline(true);
@@ -195,7 +243,9 @@ describe('integração da carteira e fila', () => {
     const id = store.getState().createDraft(11, 101);
     store.getState().updateDraft(id, { distributorIds: [501], prazos: { 501: 21 } });
     store.getState().enqueue(id);
-    vi.mocked(client.submitOrder).mockRejectedValueOnce(Object.assign(new Error('Sessão expirada'), { status: 401 }));
+    vi.mocked(client.submitOrder).mockRejectedValueOnce(
+      Object.assign(new Error('Sessão expirada'), { status: 401 }),
+    );
     store.getState().setOnline(true);
     await tick();
     expect(store.getState().authRequired).toBe(true);
@@ -218,11 +268,20 @@ describe('integração da carteira e fila', () => {
     await store.getState().login('marina', 'demo');
     store.getState().setOnline(false);
     const id = store.getState().createDraft(11, 101);
-    store.getState().updateDraft(id, { distributorIds: [501], prazos: { 501: 21 }, lines: [{ ean: '78910001', quantity: 120 }] });
+    store.getState().updateDraft(id, {
+      distributorIds: [501],
+      prazos: { 501: 21 },
+      lines: [{ ean: '78910001', quantity: 120 }],
+    });
     store.getState().enqueue(id);
     expect(client.submitOrder).not.toHaveBeenCalled();
     let done!: (value: Awaited<ReturnType<SalesApiClient['submitOrder']>>) => void;
-    vi.mocked(client.submitOrder).mockImplementation(() => new Promise(resolve => { done = resolve; }));
+    vi.mocked(client.submitOrder).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          done = resolve;
+        }),
+    );
     store.getState().setOnline(true);
     await tick();
     await store.getState().flush();
@@ -231,9 +290,9 @@ describe('integração da carteira e fila', () => {
     done({ id_pedido_gerado: 9999, id_status: 4, erros_envio: [] });
     await tick();
     expect(client.submitOrder).toHaveBeenCalledTimes(1);
-    expect(store.getState().orders.find(order => order.id === id)?.queueStatus).toBe('sent');
-    expect(store.getState().orders.find(order => order.id === id)?.lines).toHaveLength(1);
-    expect(store.getState().orders.some(order => order.id === second)).toBe(true);
+    expect(store.getState().orders.find((order) => order.id === id)?.queueStatus).toBe('sent');
+    expect(store.getState().orders.find((order) => order.id === id)?.lines).toHaveLength(1);
+    expect(store.getState().orders.some((order) => order.id === second)).toBe(true);
   });
 
   it('falha HTTP mantém pedido editável e retry usa a mesma chave', async () => {
@@ -259,14 +318,23 @@ describe('integração da carteira e fila', () => {
     await store.getState().login('marina', 'demo');
     store.getState().createDraft(11, 101);
     let complete!: (orders: typeof fixtures.tracked) => void;
-    vi.mocked(client.listOrders).mockImplementationOnce(() => new Promise(resolve => { complete = resolve; }));
+    vi.mocked(client.listOrders).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          complete = resolve;
+        }),
+    );
     const request = store.getState().refreshTracked();
     store.getState().logout();
     complete([]);
     await request;
     expect(store.getState().tracked.length).toBeGreaterThan(0);
     expect(store.getState().session).toBeNull();
-    vi.mocked(client.login).mockResolvedValueOnce({ token: 'other-token', userId: 88, name: 'Outro' });
+    vi.mocked(client.login).mockResolvedValueOnce({
+      token: 'other-token',
+      userId: 88,
+      name: 'Outro',
+    });
     const { tracked, ...catalog } = structuredClone(fixtures);
     catalog.user.id = 88;
     vi.mocked(client.getBootstrap).mockResolvedValueOnce(catalog);

@@ -4,22 +4,22 @@ O review original está em [revisao-aplicacao.md](revisao-aplicacao.md). Este ar
 
 ## Entregue
 
-| Itens | Resultado |
-| --- | --- |
-| CR-01, CR-02, CR-06 | Painel antes do login; protocolo, host, indústria, URL resultante; persistência; recriação do cliente; sessão encerrada ao trocar de destino; caches separados; demonstração por ação explícita. |
-| CR-03 | Login aceita `id` e o alias antigo `id_usuario`, priorizando `id`. `id_nivel` nunca identifica o usuário. Teste com o envelope transcrito do PHP no review. |
-| CR-04 (parcial) | Aliases comprovados `tabelas`, `id`, `razao_social`, `nome_fantasia`. Os demais campos continuam estritos; não foram preenchidos com valores comerciais inventados. |
-| CR-05 (modelo local) | Snapshots de produtos por PDV × tabela × distribuidor. Digitação, revisão e envio usam o primeiro distribuidor selecionado para a prévia. Trocar a prioridade recalcula a prévia sem descartar a carteira. A origem real dos preços continua para homologação. |
-| CR-07 (parcial) | Primeira carga de detalhes limitada a um PDV; acompanhamento inicia nos últimos 30 dias, usa cursor temporal com sobreposição de um segundo e preserva pedidos/subpedidos anteriores ao receber deltas. Cursor persistido por destino. |
-| CR-08 | Proxy de desenvolvimento no Metro: `/webol/index.php` para o host fixo `10.11.0.11`, sem abrir CORS no monólito. |
-| CR-10 | Cupons, bandeira, PDF e deduplicação permanecem indisponíveis até confirmação do contrato. |
-| CR-11, CR-12 | ESLint Expo, Prettier, aliases no TypeScript/Babel/Vitest e trava de import das telas. `npm run check` reúne tipos, testes e lint/formato. |
-| CR-13 | Store composto por sessão, catálogo, pedidos e visitas. Digitação dividida em componentes de condição, distribuidores e produtos, mantendo as rotas existentes. |
-| CR-14, CR-15 | Convenção de idioma e guia de operação com demonstração, simulador e Tradetools separados. |
-| CR-16 | Transporte/formulários em `legacy-transport.ts`; conversão de envelopes em `legacy-map.ts`; orquestração no adaptador. |
-| CR-17, CR-18, CR-21 (preparação) | Ícone/splash provisórios, perfis EAS, runtime por versão do app, canais separados e exceção Android de HTTP apenas para `10.11.0.11`, somente no perfil development. Vinculação EAS e compilação ficam com o TL. |
-| Seção 4 (parcial) | Código do pedido e justificativa coletados na revisão. Validação e prévia da divisão de agendamento em regras puras; a tela exibe as quantidades por data. |
-| Seção 5 | Regras em `src/bff/rules`, adaptadores em `src/bff/tradetools`, entrada das telas em `src/bff/cases` e tipos públicos em `src/bff/contract.ts`. Nenhum serviço novo. |
+| Itens                            | Resultado                                                                                                                                                                                                                                                      |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CR-01, CR-02, CR-06              | Painel antes do login; protocolo, host, indústria, URL resultante; persistência; recriação do cliente; sessão encerrada ao trocar de destino; caches separados; demonstração por ação explícita.                                                               |
+| CR-03                            | Login aceita `id` e o alias antigo `id_usuario`, priorizando `id`. `id_nivel` nunca identifica o usuário. Teste com o envelope transcrito do PHP no review.                                                                                                    |
+| CR-04 (parcial)                  | Aliases comprovados `tabelas`, `id`, `razao_social`, `nome_fantasia`. Os demais campos continuam estritos; não foram preenchidos com valores comerciais inventados.                                                                                            |
+| CR-05 (modelo local)             | Snapshots de produtos por PDV × tabela × distribuidor. Digitação, revisão e envio usam o primeiro distribuidor selecionado para a prévia. Trocar a prioridade recalcula a prévia sem descartar a carteira. A origem real dos preços continua para homologação. |
+| CR-07 (parcial)                  | Primeira carga de detalhes limitada a um PDV; acompanhamento inicia nos últimos 30 dias, usa cursor temporal com sobreposição de um segundo e preserva pedidos/subpedidos anteriores ao receber deltas. Cursor persistido por destino.                         |
+| CR-08                            | Proxy de desenvolvimento no Metro: `/webol/index.php` para o host fixo `10.11.0.11`, sem abrir CORS no monólito.                                                                                                                                               |
+| CR-10                            | Cupons, bandeira, PDF e deduplicação permanecem indisponíveis até confirmação do contrato.                                                                                                                                                                     |
+| CR-11, CR-12                     | ESLint Expo, Prettier, aliases no TypeScript/Babel/Vitest e trava de import das telas. `npm run check` reúne tipos, testes e lint/formato.                                                                                                                     |
+| CR-13                            | Store composto por sessão, catálogo, pedidos e visitas. Digitação dividida em componentes de condição, distribuidores e produtos, mantendo as rotas existentes.                                                                                                |
+| CR-14, CR-15                     | Convenção de idioma e guia de operação com demonstração, simulador e Tradetools separados.                                                                                                                                                                     |
+| CR-16                            | Transporte/formulários em `legacy-transport.ts`; conversão de envelopes em `legacy-map.ts`; orquestração no adaptador.                                                                                                                                         |
+| CR-17, CR-18, CR-21 (preparação) | Ícone/splash provisórios, perfis EAS, runtime por versão do app, canais separados e exceção Android de HTTP apenas para `10.11.0.11`, somente no perfil development. Vinculação EAS e compilação ficam com o TL.                                               |
+| Seção 4 (parcial)                | Código do pedido e justificativa coletados na revisão. Validação e prévia da divisão de agendamento em regras puras; a tela exibe as quantidades por data.                                                                                                     |
+| Seção 5                          | Regras em `src/bff/rules`, adaptadores em `src/bff/tradetools`, entrada das telas em `src/bff/cases` e tipos públicos em `src/bff/contract.ts`. Nenhum serviço novo.                                                                                           |
 
 ## TODO(TL): não implementado ou não homologado
 

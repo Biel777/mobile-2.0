@@ -8,7 +8,10 @@ export { createHttpClient, SalesApiError } from './http';
 export { createLegacyClient } from './legacy';
 export type { BootstrapData, Session, SalesApiClient } from './client';
 
-export function createSalesApiClient(options: Partial<ApiConfig> & Omit<Partial<HttpClientOptions & LegacyClientOptions>, 'baseUrl'> = {}) {
+export function createSalesApiClient(
+  options: Partial<ApiConfig> &
+    Omit<Partial<HttpClientOptions & LegacyClientOptions>, 'baseUrl'> = {},
+) {
   const config = { ...apiConfig, ...options };
   if (config.mode === 'mock') return mockClient;
   if (config.mode !== 'http') throw new Error('Modo de integração inválido.');

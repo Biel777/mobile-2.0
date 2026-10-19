@@ -15,21 +15,46 @@ export function validVisitDate(value: string): boolean {
 }
 export function getVisitCustomers(catalog: BootstrapData): VisitCustomer[] {
   const unique = new Map<number, VisitCustomer>();
-  for (const customer of [...catalog.customers.filter(isPortfolioCustomer), ...filterPortfolioRefs(catalog.goals.pdvsSemPositivar, catalog.customers), ...filterPortfolioRefs(catalog.goals.families.flatMap(family => family.semPositivar), catalog.customers)]) {
+  for (const customer of [
+    ...catalog.customers.filter(isPortfolioCustomer),
+    ...filterPortfolioRefs(catalog.goals.pdvsSemPositivar, catalog.customers),
+    ...filterPortfolioRefs(
+      catalog.goals.families.flatMap((family) => family.semPositivar),
+      catalog.customers,
+    ),
+  ]) {
     if (!unique.has(customer.id)) unique.set(customer.id, customer);
   }
   return [...unique.values()];
 }
 const normalizeCnpj = (value?: string) => value?.replace(/\D/g, '') || undefined;
 /** Names are display labels, never an identity join. */
-export function getCustomerOrders(customer: VisitCustomer, tracked: TrackedOrder[], locals: LocalOrder[]): { tracked: TrackedOrder[]; local: LocalOrder[] } {
-  const local = locals.filter(order => order.customerId === customer.id);
+export function getCustomerOrders(
+  customer: VisitCustomer,
+  tracked: TrackedOrder[],
+  locals: LocalOrder[],
+): { tracked: TrackedOrder[]; local: LocalOrder[] } {
+  const local = locals.filter((order) => order.customerId === customer.id);
   const cnpj = normalizeCnpj(customer.cnpj);
-  const remote = tracked.filter(order => {
+  const remote = tracked.filter((order) => {
     if (order.customerId !== undefined) return order.customerId === customer.id;
     const orderCnpj = normalizeCnpj(order.customerCnpj);
     if (orderCnpj) return !!cnpj && orderCnpj === cnpj;
-    return local.some(draft => draft.remoteId === order.id || !!order.orderClientId && draft.orderClientId === order.orderClientId);
+    return local.some(
+      (draft) =>
+        draft.remoteId === order.id ||
+        (!!order.orderClientId && draft.orderClientId === order.orderClientId),
+    );
   });
-  return { tracked: remote, local: local.filter(draft => !remote.some(order => draft.remoteId === order.id || !!order.orderClientId && draft.orderClientId === order.orderClientId)) };
+  return {
+    tracked: remote,
+    local: local.filter(
+      (draft) =>
+        !remote.some(
+          (order) =>
+            draft.remoteId === order.id ||
+            (!!order.orderClientId && draft.orderClientId === order.orderClientId),
+        ),
+    ),
+  };
 }

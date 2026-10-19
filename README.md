@@ -40,11 +40,11 @@ O [guia do simulador](tools/simulator/README.md) documenta os cenários de aceit
 
 Abra **Configurar conexão**, disponível antes do login:
 
-| Campo | Local | Produção |
-| --- | --- | --- |
-| Protocolo | `http` | `https` |
-| Host | `10.11.0.11` | `trade.fidelize.com.br` |
-| Indústria | vazio | código da empresa, por exemplo `sanofi` |
+| Campo          | Local                     | Produção                                     |
+| -------------- | ------------------------- | -------------------------------------------- |
+| Protocolo      | `http`                    | `https`                                      |
+| Host           | `10.11.0.11`              | `trade.fidelize.com.br`                      |
+| Indústria      | vazio                     | código da empresa, por exemplo `sanofi`      |
 | URL resultante | `http://10.11.0.11/webol` | `https://trade.fidelize.com.br/sanofi/webol` |
 
 **Testar conexão** solicita o endpoint de autenticação sem credenciais e verifica HTTP/JSON. Isso não prova que uma conta autentica ou sincroniza. Salve e use o login fornecido pela equipe. Host não aceita caminho: a montagem acrescenta `/webol` uma vez. A validação da URL absoluta rejeita a entrada do monólito sem esse caminho e sugere a correção.

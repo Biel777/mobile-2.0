@@ -225,7 +225,13 @@ export type SubmitOrderPayload = {
   id_tabela: number;
   id_usuario: number;
   datahora_criacao: string;
-  array_ordem_envio: { id_distribuidor: number; prioridade: number; tipo_envio: 1 | 2; prazo: number; codigo_faturamento?: string }[];
+  array_ordem_envio: {
+    id_distribuidor: number;
+    prioridade: number;
+    tipo_envio: 1 | 2;
+    prazo: number;
+    codigo_faturamento?: string;
+  }[];
   array_produtos: { ean: string; quantidade: number; desconto?: number }[];
   array_agendamento?: { data_envio: string }[];
   cupom?: string;

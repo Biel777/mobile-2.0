@@ -3,28 +3,13 @@
   "compilerOptions": {
     "strict": true,
     "paths": {
-      "@bff/*": [
-        "./src/bff/*"
-      ],
-      "@rules/*": [
-        "./src/bff/rules/*"
-      ],
-      "@tradetools/*": [
-        "./src/bff/tradetools/*"
-      ],
-      "@data/*": [
-        "./src/data/*"
-      ],
-      "@components/*": [
-        "./src/components/*"
-      ],
-      "@/*": [
-        "./*"
-      ]
+      "@bff/*": ["./src/bff/*"],
+      "@rules/*": ["./src/bff/rules/*"],
+      "@tradetools/*": ["./src/bff/tradetools/*"],
+      "@data/*": ["./src/data/*"],
+      "@components/*": ["./src/components/*"],
+      "@/*": ["./*"]
     }
   },
-  "include": [
-    "**/*.ts",
-    "**/*.tsx"
-  ]
+  "include": ["**/*.ts", "**/*.tsx"]
 }
