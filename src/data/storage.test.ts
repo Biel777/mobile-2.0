@@ -58,6 +58,26 @@ const snapshot = () => ({
   version: 0,
 });
 describe('recuperação conservadora do cache', () => {
+  it('aguarda gravações do adaptador anterior ao voltar rapidamente ao mesmo destino', async () => {
+    const { cache, tokens, storage } = setup('ios');
+    let finish!: () => void;
+    tokens.setItemAsync.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const writing = storage.setItem(key, JSON.stringify(snapshot()));
+    await Promise.resolve();
+    const next = createAppStorage(cache, tokens, 'ios', config);
+    const reading = next.getItem(key);
+    await Promise.resolve();
+    expect(cache.getItem).not.toHaveBeenCalled();
+    finish();
+    await writing;
+    const restored = JSON.parse((await reading)!);
+    expect(restored.state.orders).toEqual(snapshot().state.orders);
+  });
   it('recupera namespace único do mesmo tenant/mode sem apagar histórico e exige autenticação', async () => {
     const oldKey = `forca-vendas-v5-http-previous-${config.baseUrl}`;
     const original = snapshot();

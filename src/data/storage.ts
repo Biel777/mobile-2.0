@@ -15,6 +15,10 @@ type Tokens = {
   deleteItemAsync(key: string): Promise<void>;
 };
 
+// Endpoint changes create new adapters over the same device storage. Reads must
+// await pending writes from the previous adapter before restoring its drafts.
+const pendingWrites = new WeakMap<CacheStorage, Promise<void>>();
+
 /** Preserve account data when only the transport namespace or area field changed. */
 export function createAppStorage(
   cache: CacheStorage,
@@ -26,15 +30,17 @@ export function createAppStorage(
   const prefix = `forca-vendas-v5-${config.mode}-`;
   const suffix = `-${config.baseUrl}`;
   const currentKey = `${prefix}${config.protocol}${suffix}`;
-  let writes = Promise.resolve();
   function serialize(operation: () => Promise<void>) {
-    const task = writes.then(operation);
-    writes = task.catch(() => {});
+    const task = (pendingWrites.get(cache) ?? Promise.resolve()).then(operation);
+    pendingWrites.set(
+      cache,
+      task.catch(() => {}),
+    );
     return task;
   }
   return {
     async getItem(key: string) {
-      await writes;
+      await pendingWrites.get(cache);
       let raw = await cache.getItem(key);
       let recovered = false;
       if (!raw && key === currentKey && config.protocol === 'legacy') {
