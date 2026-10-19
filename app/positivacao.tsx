@@ -1,13 +1,14 @@
-import { filterPortfolioRefs } from '../src/domain/portfolio';
-import { AppIcon } from '../src/components/icons';
-import { withSession } from '../src/components/require-session';
-import { startOrderForPdv } from '../src/data/order-entry';
+import { filterPortfolioRefs } from '@bff/cases/sales';
+import { AppIcon } from '@components/icons';
+import { withSession } from '@components/require-session';
+import { startOrderForPdv } from '@bff/cases/sales';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { TabBar } from '../src/components/tabbar';
-import { Card } from '../src/components/ui';
-import { useAppStore } from '../src/data/store';
-import type { PdvRef } from '../src/domain/types';
+import { TabBar } from '@components/tabbar';
+import { Card } from '@components/ui';
+import { useAppStore } from '@bff/cases/sales';
+import type { PdvRef } from '@bff/contract';
+
 import { colors, fonts, radius, space } from '../src/theme';
 
 function PdvCard({

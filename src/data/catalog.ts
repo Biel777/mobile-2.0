@@ -1,4 +1,4 @@
-import type { BootstrapData } from '../api/client';
+import type { BootstrapData } from '@tradetools/client';
 
 export const emptyCatalog: BootstrapData = {
   user: { id: 0, name: '', login: '', area: '', bloqueiaNegociado: true },

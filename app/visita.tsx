@@ -1,14 +1,14 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { withSession } from '../src/components/require-session';
-import { Banner, Card, PrimaryButton, GhostButton } from '../src/components/ui';
-import { useVisitDay } from '../src/components/visits';
-import { useAppStore } from '../src/data/store';
-import { startOrderForPdv } from '../src/data/order-entry';
-import { getCustomerOrders, getVisitCustomers } from '../src/domain/visits';
-import { isAttention } from '../src/domain/order-updates';
-import { statusLabel } from '../src/domain/status';
+import { withSession } from '@components/require-session';
+import { Banner, Card, PrimaryButton, GhostButton } from '@components/ui';
+import { useVisitDay } from '@components/visits';
+import { useAppStore } from '@bff/cases/sales';
+import { startOrderForPdv } from '@bff/cases/sales';
+import { getCustomerOrders, getVisitCustomers } from '@bff/cases/sales';
+import { isAttention } from '@bff/cases/sales';
+import { statusLabel } from '@bff/cases/sales';
 import { colors, fonts, radius, space } from '../src/theme';
 
 function VisitCustomerScreen() {

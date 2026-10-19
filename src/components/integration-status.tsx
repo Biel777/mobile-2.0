@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { apiConfig } from '../api';
-import { useAppStore } from '../data/store';
+import { router } from 'expo-router';
+import { useConnection } from '@bff/cases/connection';
+import { useAppStore } from '@bff/cases/sales';
 import { colors, fonts, space } from '../theme';
 
 export function IntegrationStatus() {
+  const apiConfig = useConnection(state => state.config);
+  const connectionError = useConnection(state => state.error);
   const [showWarnings, setShowWarnings] = useState(false);
   const warnings = useAppStore(state => state.catalog.integrationWarnings);
   const session = useAppStore(state => state.session);
@@ -17,6 +20,8 @@ export function IntegrationStatus() {
   return <View style={styles.box}>
     <Text style={styles.label}>{apiConfig.mode === 'http' ? `API HTTP · ${apiConfig.protocol === 'legacy' ? 'Legacy' : 'contrato mobile v1'}` : 'Demonstração local · dados simulados'}</Text>
     {apiConfig.mode === 'http' ? <Text style={styles.address}>{apiConfig.baseUrl}</Text> : null}
+    <Pressable accessibilityRole="button" onPress={() => router.push('/configuracao')} style={styles.button}><Text style={styles.link}>Configurar conexão</Text></Pressable>
+    {connectionError ? <Text style={styles.error}>{connectionError}</Text> : null}
     <View style={styles.actions}>
       <Text style={styles.label}>{!online ? 'Offline · usando cache' : syncing ? 'Sincronizando…' : 'Online'}</Text>
       {session && !authRequired ? <Pressable accessibilityRole="button" disabled={syncing || !online}

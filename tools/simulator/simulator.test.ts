@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { createSimulator } from './server';
-import { createHttpClient } from '../../src/api/http';
+import { createHttpClient } from '@tradetools/http';
 let server: Server; let base: string; let token: string;
 const payload = () => ({ order_client_id: crypto.randomUUID(), id_cliente: 11, id_tabela: 101, id_usuario: 77, datahora_criacao: new Date().toISOString(), array_ordem_envio: [{ id_distribuidor: 501, prioridade: 1, tipo_envio: 2, prazo: 21 }], array_produtos: [{ ean: '78910001', quantidade: 120 }] });
 async function request(path: string, method = 'GET', body?: unknown, customHeaders: Record<string, string> = {}) {

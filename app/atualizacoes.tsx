@@ -1,12 +1,13 @@
-import { AppIcon } from '../src/components/icons';
+import { AppIcon } from '@components/icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import { withSession } from '../src/components/require-session';
-import { Banner } from '../src/components/ui';
-import { updateTime } from '../src/components/order-updates';
-import { useAppStore } from '../src/data/store';
-import { isAttention, isUnread, type OrderUpdate } from '../src/domain/order-updates';
+import { withSession } from '@components/require-session';
+import { Banner } from '@components/ui';
+import { updateTime } from '@components/order-updates';
+import { useAppStore } from '@bff/cases/sales';
+import type { OrderUpdate } from '@bff/contract';
+import { isAttention, isUnread } from '@bff/cases/sales';
 import { colors, fonts, radius, space } from '../src/theme';
 
 function UpdatesScreen() {

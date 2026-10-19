@@ -1,10 +1,10 @@
-import { withSession } from '../src/components/require-session';
-import { useAppStore } from '../src/data/store';
+import { withSession } from '@components/require-session';
+import { useAppStore } from '@bff/cases/sales';
 import { router } from 'expo-router';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { TabBar } from '../src/components/tabbar';
-import { BigNumber, Card, PrimaryButton } from '../src/components/ui';
-import { attainment, gap, money, moneyShort } from '../src/domain/pricing';
+import { TabBar } from '@components/tabbar';
+import { BigNumber, Card, PrimaryButton } from '@components/ui';
+import { attainment, gap, money, moneyShort } from '@bff/cases/sales';
 import { colors, fonts, space } from '../src/theme';
 
 function MetasScreen() {

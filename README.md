@@ -1,61 +1,91 @@
 # Força de Vendas
 
-App Expo/React Native + TypeScript para clientes, condições comerciais, pedidos offline, acompanhamento e metas.
+App Expo/React Native com TypeScript para carteira, condições comerciais, digitação offline, fila e acompanhamento.
 
-## Testar com o simulador local
+## Preparar o projeto
 
-Na pasta deste projeto:
+No Windows, mantenha o checkout, dependências e caches em `D:`:
 
 ```powershell
-npm install
+Set-Location 'D:\projetos\mobile 2.0\Mobile 2.0'
+$env:npm_config_cache = 'D:\projetos\cache\npm'
+$env:TEMP = 'D:\projetos\cache\tmp'
+$env:TMP = $env:TEMP
+$env:__UNSAFE_EXPO_HOME_DIRECTORY = 'D:\projetos\cache\expo'
+$env:EXPO_NO_TELEMETRY = '1'
+New-Item -ItemType Directory -Force $env:TEMP | Out-Null
+npm ci
+npm run web
+```
+
+O override `__UNSAFE_EXPO_HOME_DIRECTORY` é o mecanismo disponível na versão instalada do Expo para guardar seu estado fora de `C:`. Reavalie ao atualizar o SDK. Não há credenciais reais embutidas no app.
+
+## Três destinos diferentes
+
+### Demonstração
+
+Abra **Configurar conexão**, preencha um host válido e toque em **Entrar em demonstração com dados simulados**. A faixa de demonstração permanece visível. O login fictício aceita usuário não vazio e senha com pelo menos três caracteres. Não há HTTP nem pedidos reais nesse modo.
+
+### Simulador HTTP
+
+```powershell
 npm run dev:integration
 ```
 
-- Aplicativo: http://localhost:8081
-- Laboratório de API: http://127.0.0.1:4010
-- Usuário fictício: `marina`; senha: `demo` (o simulador aceita qualquer login não vazio e senha de pelo menos três caracteres, sempre na mesma carteira fictícia).
+Aplicativo: `http://localhost:8081`. Laboratório: `http://127.0.0.1:4010`. Conta fictícia: `marina`, senha `demo`. O script configura o protocolo `legacy` com a base `http://localhost:4010/webol`. Os envelopes comerciais são de laboratório e não comprovam o contrato do Tradetools. O protocolo opcional `mobile-v1` também permanece disponível por variável de ambiente. Uma configuração anteriormente salva no painel tem prioridade sobre o env. Para repetir o laboratório em uma instalação já configurada, use um perfil novo do navegador ou limpe o armazenamento do aplicativo.
 
-O comando inicia o simulador e o app em processos separados, com comunicação HTTP real. Encerre com Ctrl+C. Se já houver uma instância, encerre-a antes de iniciar novamente.
+O [guia do simulador](tools/simulator/README.md) documenta os cenários de aceite, rejeição, nota e perda de confirmação. Esses testes não homologam o PHP real.
 
-No app, crie um pedido para Drogaria Central, tabela Regular, Profarma, prazo 21 e 120 unidades de BUSCODUO. Envie. No painel, entre, atualize pedidos e clique em Faturar no pedido criado. Atualize no app e abra a nota. Nenhuma dessas ações envia pedidos a distribuidores reais.
+### Tradetools local ou produção
 
-O painel permite editar JSON, enviar e repetir chamadas, sincronizar carteira, consultar metas, simular aceite/parcial/rejeição/nota e provocar 500, 401, lentidão e confirmação perdida. A última chamada/retorno fica visível, com credenciais mascaradas.
+Abra **Configurar conexão**, disponível antes do login:
 
-## Configuração e modos
+| Campo | Local | Produção |
+| --- | --- | --- |
+| Protocolo | `http` | `https` |
+| Host | `10.11.0.11` | `trade.fidelize.com.br` |
+| Indústria | vazio | código da empresa, por exemplo `sanofi` |
+| URL resultante | `http://10.11.0.11/webol` | `https://trade.fidelize.com.br/sanofi/webol` |
 
-`npm run web` usa demonstração interna por padrão. Para HTTP, use `npm run dev:integration` ou copie `.env.example` para `.env.local` e execute o app com o simulador em outro terminal (`npm run simulator`). Reinicie o Expo ao alterar variáveis.
+**Testar conexão** solicita o endpoint de autenticação sem credenciais e verifica HTTP/JSON. Isso não prova que uma conta autentica ou sincroniza. Salve e use o login fornecido pela equipe. Host não aceita caminho: a montagem acrescenta `/webol` uma vez. A validação da URL absoluta rejeita a entrada do monólito sem esse caminho e sugere a correção.
 
-`EXPO_PUBLIC_API_BASE_URL` recebe a base do sistema legado, por exemplo `https://tenant/legacy`, sem a query `?r=`. `EXPO_PUBLIC_API_URL` é um alias. `EXPO_PUBLIC_API_PROTOCOL=legacy` seleciona as rotas Yii/formulários; `mobile-v1` mantém o laboratório normalizado opcional. Variáveis `EXPO_PUBLIC_*` são públicas; não use senhas ou tokens nelas. A configuração é separada por ambiente no cache local. O cache v4 da demonstração anterior não é migrado nem apagado; o novo cache v5 começa vazio e só recebe cadastros após login/sincronização.
+No Expo Web de desenvolvimento, somente a base `http://10.11.0.11/webol` passa automaticamente pelo proxy Metro no mesmo domínio do navegador. No aparelho a chamada vai direto ao host. O proxy tem destino fixo e não altera CORS no monólito. Ele não existe no export web; hospedar a versão web exige uma solução de mesma origem da equipe.
 
-Os rascunhos ficam no aparelho. Uma fila interrompida preserva a chave e o payload. No protocolo legado, confirmação incerta não é reenviada automaticamente: consulta-se o ID remoto conhecido ou o usuário confere antes de autorizar uma repetição. No protocolo de laboratório mobile-v1, o servidor simulado garante idempotência. Pedidos com confirmação incerta ficam bloqueados para edição até reconciliação ou confirmação do reenvio. Trocar de conta limpa a carteira ativa; sair preserva rascunhos para reautenticar a mesma conta. No navegador o token fica apenas em memória e é necessário entrar novamente após recarregar; o cache permanece disponível offline com a sessão local. Android/iOS usam SecureStore para token.
+Salvar outro destino encerra a sessão, recria o cliente e seleciona o cache correspondente. Rascunhos do destino anterior permanecem separados. Ao voltar, entre novamente. Na web, o token vive só em memória; no nativo, SecureStore guarda o token. Variáveis `EXPO_PUBLIC_*` são apenas configuração inicial de desenvolvimento, substituída pela configuração salva.
 
-## Integração legada direta e limites
+A primeira prova Legacy carrega detalhes de **um PDV**, explicitado na faixa de limites. O acompanhamento inicia nos últimos 30 dias e mantém cursor e resultados anteriores. Ainda faltam contratos reais para notas incrementais e carteira completa. Não interprete essa carga como substituição do Transfer Order.
 
-O adaptador `src/api/legacy.ts` chama diretamente `index.php?r=api/...`, com `application/x-www-form-urlencoded`. Cobre autenticação/sessão, carteira e condições, produtos, envio, consulta de status, subpedidos, notas e metas. Não exige um gateway ou alteração do monólito.
-
-O [mapa fornecido pelo usuário](docs/integracao-legacy.md) define rotas e campos de envio. O adaptador traduz descontos, códigos de faturamento, data/hora do tenant e agendamentos; omite id_usuario no POST de pedido e consulta o status após obter id_pedido. Login usa id_usuario retornado ou configuração explícita; id_nivel nunca é interpretado como usuário.
-
-Os envelopes detalhados de cadastros/metas não foram fornecidos integralmente. O simulador e os mappers usam **amostras sintéticas explícitas**, que precisam ser comparadas com respostas anonimizadas do tenant antes de produção. Configurar a URL sozinha não homologa esses mapeamentos. Preços que variam por PDV/OPL são recusados porque o modelo atual de tabela global não os representa com segurança. Cupons e metas de bandeira ficam indisponíveis até confirmação do contrato. PDF/DANFE e GraphQL por tenant permanecem fora deste incremento.
-
-O protocolo opcional `/api/mobile/v1` é normalizado para laboratório; não corresponde a uma rota comprovadamente existente no Sales API. O app continua podendo usar o mock interno, sem exercitar HTTP.
-
-- [Guia do laboratório, cenários e acesso por celular](tools/simulator/README.md).
-- [Coleção Postman Legacy](tools/simulator/sales-api-legacy.postman_collection.json): formulários e rotas para importação, usando dados fictícios por padrão. Substitua códigos/perfis apenas depois de confirmar com o tenant.
-- [OpenAPI do laboratório Mobile v1](tools/simulator/openapi.json): importável no Postman/Insomnia; não descreve o contrato Legacy legado.
-- [Análise, plano, QA e pendências](docs/melhorias/integracao-sales-api.md).
-
-## Verificação
+## Validação e arquitetura
 
 ```powershell
-npm test
-npx tsc --noEmit
-npx expo export --platform web --max-workers 2
+npm run check
+npm run format
 ```
 
-Os testes incluem domínio comercial, transporte HTTP, endpoints reais do simulador em portas temporárias, fila concorrente e troca de sessão. Builds e comportamento nativos precisam ser validados em Android/iOS. A simulação não prova paridade completa com regras comerciais do backend.
+`check` executa TypeScript, testes e lint/formato. A formatação é feita em commit próprio. Telas e componentes acessam os fluxos por `@bff/cases/*` e tipos por `@bff/contract`. O lint impede acesso direto a regras, adaptadores, cache e fila.
 
-## Configuração neutra e dados locais
+- `src/bff/rules`: motor offline puro; preserva preço, mínimo, fração, combo e gatilhos.
+- `src/bff/tradetools`: transporte, formulários e mapeamento dos contratos HTTP.
+- `src/bff/cases`: entrada dos fluxos de tela, sem serviço novo.
+- `src/data`: store composto por sessão, catálogo, pedidos e visitas; persistência do aparelho.
+- `src/components/order`: passos de condição, distribuidores e produtos.
 
-As variáveis públicas usam o prefixo `EXPO_PUBLIC_API_`; copie os nomes atuais de `.env.example` e reinicie o Expo. O transporte por formulário usa `EXPO_PUBLIC_API_PROTOCOL=legacy`. O simulador usa `SALES_SIM_PORT`.
+Rotas e textos de tela em português; identificadores de código em inglês. Não renomear rotas existentes só por simetria.
 
-Na mudança de namespace, o app recupera um cache anterior apenas quando existe um único candidato do mesmo ambiente e URL. Preserva carteira, rascunhos, histórico e visitas, sem apagar o cache de origem. A sessão recuperada exige autenticação novamente; nenhum token antigo é reutilizado por adivinhação. Se houver caches ambíguos, o app não escolhe entre eles.
+O PHP revalida o pedido. A prévia offline usa os preços da combinação PDV × tabela × primeiro distribuidor selecionado. Trocar a prioridade recalcula a prévia. Cupons continuam bloqueados no Legacy até confirmação do campo. Nenhum código de faturamento é gerado a partir do ID do distribuidor.
+
+## Primeiro build interno
+
+Há perfis `development`, `preview` e `production` em `eas.json`, runtime pela versão do app, ícone/splash provisórios e dependências de dev client/updates. A equipe precisa vincular seu projeto EAS e configurar os identificadores reais antes de compilar ou distribuir updates.
+
+Com o EAS da equipe configurado e seus caches em `D:`, gerar `eas build --profile development --platform android`. Só esse perfil inclui o plugin que permite HTTP para **10.11.0.11**. A configuração base continua proibindo cleartext para os demais destinos. Preview/production não incluem a exceção. Validar em aparelho na rede local; web export e testes unitários não provam o binário.
+
+Não há APK/IPA homologado nesta entrega. Mac ou builder da equipe é necessário para iOS. Não publicar nas lojas junto com esta integração.
+
+## Review e pendências do TL
+
+Veja [o review original](docs/revisao-aplicacao.md) e [o status por item e TODOs do TL](docs/pendencias-tl.md). Os envelopes ainda usam amostras sintéticas onde não há captura real. O envelope de login documentado pelo PHP tem teste próprio; isso não é uma fixture real de sincronização.
+
+Mix, histórico do mês, origem de faturamento, lojas adicionais e divisão efetiva do agendamento dependem dos contratos que o TL precisa fornecer/homologar. Código do pedido e justificativa já são coletados; a obrigatoriedade da justificativa depende da regra real. A prévia de agendamento divide quantidades pelo motor existente, sem inventar campos para o PHP.
+
+Histórico de processo fica em `.squad/` e `docs/melhorias/`; esses arquivos não são guia operacional. O [mapa Legacy](docs/integracao-legacy.md) descreve as hipóteses do laboratório. Nenhum pedido real foi enviado.

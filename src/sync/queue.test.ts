@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { mockClient } from '../api/mock';
-import type { LocalOrder } from '../domain/types';
+import { mockClient } from '@tradetools/mock';
+import type { LocalOrder } from '@rules/types';
 import { flushQueue } from './queue';
 
 function draft(id: string): LocalOrder {

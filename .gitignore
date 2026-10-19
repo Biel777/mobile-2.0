@@ -9,3 +9,7 @@ web-build/
 .env
 .env.*
 !.env.example
+
+# Generated native projects (Expo prebuild)
+android/
+ios/

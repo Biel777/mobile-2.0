@@ -1,15 +1,15 @@
-import { filterPortfolioRefs } from '../src/domain/portfolio';
-import { VisitsSummary } from '../src/components/visits';
-import { OrderUpdatesSummary } from '../src/components/order-updates';
-import { startOrderForPdv } from '../src/data/order-entry';
+import { filterPortfolioRefs } from '@bff/cases/sales';
+import { VisitsSummary } from '@components/visits';
+import { OrderUpdatesSummary } from '@components/order-updates';
+import { startOrderForPdv } from '@bff/cases/sales';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAppStore } from '../src/data/store';
-import { attainment, gap, moneyShort } from '../src/domain/pricing';
-import { TabBar } from '../src/components/tabbar';
-import { Banner, BigNumber, Card, PrimaryButton } from '../src/components/ui';
+import { useAppStore } from '@bff/cases/sales';
+import { attainment, gap, moneyShort } from '@bff/cases/sales';
+import { TabBar } from '@components/tabbar';
+import { Banner, BigNumber, Card, PrimaryButton } from '@components/ui';
 import { colors, fonts, radius, space } from '../src/theme';
 
 export default function HomeScreen() {
@@ -21,8 +21,8 @@ export default function HomeScreen() {
   const lastSync = useAppStore((state) => state.lastSync);
   const orders = useAppStore((state) => state.orders);
   const login = useAppStore((state) => state.login);
-  const [user, setUser] = useState('marina');
-  const [password, setPassword] = useState('campo123');
+  const [user, setUser] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
   if (!session || (authRequired && online)) {

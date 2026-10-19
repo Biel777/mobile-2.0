@@ -2,7 +2,7 @@ import { beforeEach, afterEach, describe, expect, it } from 'vitest';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { createSimulator } from './server';
-import { createLegacyClient } from '../../src/api/legacy';
+import { createLegacyClient } from '@tradetools/legacy';
 let server: Server; let base: string;
 beforeEach(async () => { server = createSimulator().server; await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve)); base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`; });
 afterEach(async () => { server.closeAllConnections(); await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve())); });

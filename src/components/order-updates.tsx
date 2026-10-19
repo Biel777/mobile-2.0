@@ -2,8 +2,8 @@ import { AppIcon } from './icons';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { useAppStore } from '../data/store';
-import { isAttention, isUnread } from '../domain/order-updates';
+import { useAppStore } from '@bff/cases/sales';
+import { isAttention, isUnread } from '@bff/cases/sales';
 import { colors, fonts, radius, space } from '../theme';
 
 export function updateTime(at: string) {
@@ -32,7 +32,9 @@ export function OrderUpdateHistory({ orderId, localOrderId }: { orderId?: number
   const markRead = useAppStore(state => state.markOrderUpdateRead);
   const review = useAppStore(state => state.reviewOrderUpdate);
   const [expanded, setExpanded] = useState(false);
-  useEffect(() => { if (update) markRead(update.key); }, [update?.key, update?.fingerprint, markRead]);
+  const updateKey = update?.key;
+  const fingerprint = update?.fingerprint;
+  useEffect(() => { if (updateKey) markRead(updateKey); }, [updateKey, fingerprint, markRead]);
   if (!update) return null;
   return <View style={styles.history}>
     {isAttention(update) ? <View style={styles.attentionBox}>

@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-vi.mock('expo-router', () => ({ router: { push: vi.fn() } }));
-vi.mock('./store', () => ({ useAppStore: { getState: vi.fn() } }));
 import { router } from 'expo-router';
 import { useAppStore } from './store';
 import { fixtures } from './fixtures';
 import { startOrderForPdv } from './order-entry';
+vi.mock('expo-router', () => ({ router: { push: vi.fn() } }));
+vi.mock('./store', () => ({ useAppStore: { getState: vi.fn() } }));
 
 beforeEach(() => vi.clearAllMocks());
 function setup(catalog = fixtures) {

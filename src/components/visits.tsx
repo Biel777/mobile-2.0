@@ -1,9 +1,9 @@
-import { isPortfolioCustomer } from '../domain/portfolio';
+import { isPortfolioCustomer } from '@bff/cases/sales';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { AppState, Pressable, StyleSheet, Text, View } from 'react-native';
-import { useAppStore } from '../data/store';
-import { localDateKey } from '../domain/visits';
+import { useAppStore } from '@bff/cases/sales';
+import { localDateKey } from '@bff/cases/sales';
 import { colors, fonts, radius, space } from '../theme';
 import { AppIcon } from './icons';
 

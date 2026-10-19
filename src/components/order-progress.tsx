@@ -1,10 +1,11 @@
 import { AppIcon } from './icons';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { getOrderProgress } from '../domain/order-progress';
-import type { TrackedOrder } from '../domain/types';
+import { getOrderProgress } from '@bff/cases/sales';
+import type { TrackedOrder } from '@bff/contract';
+
 import { colors, fonts, radius, space } from '../theme';
-import { statusLabel } from '../domain/status';
+import { statusLabel } from '@bff/cases/sales';
 
 export function OrderProgress({ order }: { order: TrackedOrder }) {
   const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);

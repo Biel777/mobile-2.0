@@ -1,9 +1,9 @@
-import { ORDER_STATUS } from '../../src/domain/status';
+import { ORDER_STATUS } from '@rules/status';
 import type { IncomingMessage } from 'node:http';
 import { randomUUID } from 'node:crypto';
 import { fixtures } from '../../src/data/fixtures';
-import type { createMockClient } from '../../src/api/mock';
-import type { SubmitOrderPayload } from '../../src/domain/types';
+import type { createMockClient } from '@tradetools/mock';
+import type { SubmitOrderPayload } from '@rules/types';
 
 type Response = { status: number; data: unknown };
 type Session = { login: string; code: string; userId: number };

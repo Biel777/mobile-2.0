@@ -1,11 +1,11 @@
-import { withSession } from '../../src/components/require-session';
+import { withSession } from '@components/require-session';
 import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { TabBar } from '../../src/components/tabbar';
-import { Banner, Card, GhostButton } from '../../src/components/ui';
-import { useAppStore } from '../../src/data/store';
-import { money } from '../../src/domain/pricing';
-import { statusLabel } from '../../src/domain/status';
+import { TabBar } from '@components/tabbar';
+import { Banner, Card, GhostButton } from '@components/ui';
+import { useAppStore } from '@bff/cases/sales';
+import { money } from '@bff/cases/sales';
+import { statusLabel } from '@bff/cases/sales';
 import { colors, fonts, radius, space } from '../../src/theme';
 
 function orderNet(items: { unitPrice: number; discountPercent: number; quantNot: number; quantPed: number }[]) {
@@ -20,7 +20,6 @@ function PedidosScreen() {
   const orders = useAppStore((state) => state.orders);
   const tracked = useAppStore((state) => state.tracked);
   const online = useAppStore((state) => state.online);
-  const flush = useAppStore((state) => state.flush);
   const pullUpdates = useAppStore((state) => state.pullUpdates);
 
   return (

@@ -1,10 +1,10 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { createMockClient } from '../../src/api/mock';
+import { createMockClient } from '@tradetools/mock';
 import { createLegacySimulator } from './legacy';
 import { fixtures } from '../../src/data/fixtures';
-import type { SubmitOrderPayload } from '../../src/domain/types';
+import type { SubmitOrderPayload } from '@rules/types';
 
 export type Scenario = 'normal' | 'latency' | 'server-error' | 'unauthorized' | 'lost-response';
 export function createSimulator(options: { allowedOrigins?: string[] } = {}) {
@@ -29,7 +29,7 @@ export function createSimulator(options: { allowedOrigins?: string[] } = {}) {
     const started = Date.now();
     const url = new URL(req.url ?? '/', 'http://localhost');
     const path = url.pathname;
-    const logPath = path === '/index.php' ? '/index.php?r=' + (url.searchParams.get('r') ?? '').replace(/[^a-zA-Z/]/g, '').slice(0, 80) : path.slice(0, 100);
+    const logPath = (path === '/index.php' || path === '/webol/index.php') ? '/index.php?r=' + (url.searchParams.get('r') ?? '').replace(/[^a-zA-Z/]/g, '').slice(0, 80) : path.slice(0, 100);
     res.on('finish', () => {
       if (path === '/__sim/logs') return;
       logs.unshift({ at: new Date().toISOString(), method: req.method ?? 'GET', path: logPath, status: res.statusCode, durationMs: Date.now() - started });
@@ -54,7 +54,7 @@ export function createSimulator(options: { allowedOrigins?: string[] } = {}) {
         const token = randomUUID(); sessions.set(token, session.userId);
         return json(res, 200, { ...session, token });
       }
-      if (path === '/index.php') {
+      if ((path === '/index.php' || path === '/webol/index.php')) {
         const form = req.method === 'POST' ? new URLSearchParams(await bodyText(req)) : new URLSearchParams();
         const result = await legacy(req, url, form); return json(res, result.status, result.data);
       }

@@ -1,0 +1,7 @@
+node_modules/
+.expo/
+dist/
+package-lock.json
+.squad/
+docs/melhorias/
+docs/revisao-aplicacao.md

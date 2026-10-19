@@ -1,0 +1,36 @@
+# Aplicação do review de 19/10/2026
+
+O review original está em [revisao-aplicacao.md](revisao-aplicacao.md). Este arquivo registra o que foi implementado e o que depende de homologação. **A pedido do usuário, as partes que não puderam ser implementadas com segurança estão atribuídas ao TL.** Não há conta de homologação nem fixtures reais disponíveis. A tentativa de alcançar `http://10.11.0.11/webol/index.php?r=api/authentication/new` nesta máquina terminou em timeout.
+
+## Entregue
+
+| Itens | Resultado |
+| --- | --- |
+| CR-01, CR-02, CR-06 | Painel antes do login; protocolo, host, indústria, URL resultante; persistência; recriação do cliente; sessão encerrada ao trocar de destino; caches separados; demonstração por ação explícita. |
+| CR-03 | Login aceita `id` e o alias antigo `id_usuario`, priorizando `id`. `id_nivel` nunca identifica o usuário. Teste com o envelope transcrito do PHP no review. |
+| CR-04 (parcial) | Aliases comprovados `tabelas`, `id`, `razao_social`, `nome_fantasia`. Os demais campos continuam estritos; não foram preenchidos com valores comerciais inventados. |
+| CR-05 (modelo local) | Snapshots de produtos por PDV × tabela × distribuidor. Digitação, revisão e envio usam o primeiro distribuidor selecionado para a prévia. Trocar a prioridade recalcula a prévia sem descartar a carteira. A origem real dos preços continua para homologação. |
+| CR-07 (parcial) | Primeira carga de detalhes limitada a um PDV; acompanhamento inicia nos últimos 30 dias, usa cursor temporal com sobreposição de um segundo e preserva pedidos/subpedidos anteriores ao receber deltas. Cursor persistido por destino. |
+| CR-08 | Proxy de desenvolvimento no Metro: `/webol/index.php` para o host fixo `10.11.0.11`, sem abrir CORS no monólito. |
+| CR-10 | Cupons, bandeira, PDF e deduplicação permanecem indisponíveis até confirmação do contrato. |
+| CR-11, CR-12 | ESLint Expo, Prettier, aliases no TypeScript/Babel/Vitest e trava de import das telas. `npm run check` reúne tipos, testes e lint/formato. |
+| CR-13 | Store composto por sessão, catálogo, pedidos e visitas. Digitação dividida em componentes de condição, distribuidores e produtos, mantendo as rotas existentes. |
+| CR-14, CR-15 | Convenção de idioma e guia de operação com demonstração, simulador e Tradetools separados. |
+| CR-16 | Transporte/formulários em `legacy-transport.ts`; conversão de envelopes em `legacy-map.ts`; orquestração no adaptador. |
+| CR-17, CR-18, CR-21 (preparação) | Ícone/splash provisórios, perfis EAS, runtime por versão do app, canais separados e exceção Android de HTTP apenas para `10.11.0.11`, somente no perfil development. Vinculação EAS e compilação ficam com o TL. |
+| Seção 4 (parcial) | Código do pedido e justificativa coletados na revisão. Validação e prévia da divisão de agendamento em regras puras; a tela exibe as quantidades por data. |
+| Seção 5 | Regras em `src/bff/rules`, adaptadores em `src/bff/tradetools`, entrada das telas em `src/bff/cases` e tipos públicos em `src/bff/contract.ts`. Nenhum serviço novo. |
+
+## TODO(TL): não implementado ou não homologado
+
+1. **CR-04: sincronização real e fixture.** Na rede correta, fornecer conta de homologação, realizar login, capturar os envelopes e anonimizar token, login, CNPJ, nomes e identificadores antes de versionar. O teste de `id` é baseado no trecho documentado do PHP, não em uma captura real. Confirmar área do cliente, vínculos, tabelas, produtos, prazos, metas e formatos de erro. Não transformar ausências em zero ou permissões positivas.
+2. **CR-05 e CR-09: origem real de preços e faturamento.** Conferir `distribuidores/getPrecosProdutosPorDistribuidor`, `clientes/getDistribuidores`, `getFiliaisDeClientes` e `BlocoPedidosDistribuidorController.js`. O checkout do Transfer Order não está disponível neste projeto. O adaptador conserva o perfil conhecido e recusa envio sem código explícito de faturamento. Só depois fazer um pedido em PDV de homologação.
+3. **CR-07: carteira completa e notas incrementais.** Homologar `codigo_sincronizacao`, `ids_clientes`, paginação e filtro de `nota/index`. A limitação de um PDV é deliberada para a primeira prova, não resolve volume de produção. `nota/index` ainda usa o contrato sintético sem filtro confirmado. O histórico inicial de 30 dias não é uma migração integral do legado.
+4. **Seção 4: mix e demanda do mês.** Capturar `segmentacaoMix`, `historicoProdutosPedidosNoMesAtual` e `historicoProdutosFaturadosPorTabelaNoMesAtual`. Somente depois implementar o filtro e a agregação nas regras. Não inferir faturamento/demanda nem apresentar o catálogo de laboratório como mix homologado.
+5. **Seção 4: regras ausentes.** Confirmar no legado descontos por classificação/família, significado de `basket` e condição de obrigatoriedade de justificativa. A justificativa já é coletada, mas não foi inventada uma regra de obrigatoriedade. Não reescrever o motor existente sem esses dados.
+6. **Seção 4: lojas adicionais e divisão efetiva.** Confirmar a relação das lojas adicionais no contrato e a forma como o PHP associa quantidades a cada data. A UI não oferece lojas arbitrárias como adicionais. A prévia usa `splitLines`, mas o formulário continua enviando o agendamento já conhecido; não foi criado um campo PHP sem evidência. Após confirmar, implementar um caso de uso com um identificador estável e envio separado por loja, preservando reenvio e confirmação incerta.
+7. **CR-19 e CR-20: prova nativa.** Vincular o projeto EAS à conta da equipe, compilar Android e iOS, instalar em aparelho na rede do tenant, validar nova arquitetura, NetInfo e SecureStore depois de matar o processo, login, sincronização e pedido de homologação. Não foi gerado nem instalado um APK/IPA nesta entrega. iOS exige o builder da equipe ou Mac.
+8. **CR-21: publicação e OTA.** Configurar `extra.eas.projectId` e `updates.url` com os dados reais da equipe antes de distribuir updates. Os canais e o runtime estão preparados; não há vínculo fictício com EAS. Ícone/splash são provisórios, não uma identidade aprovada para loja.
+9. **CR-22: dependências.** O audit após preparar as dependências de desenvolvimento apontou 66 avisos (26 moderados, 37 altos, 3 críticos). Tratar em incremento próprio, como o review determina, incluindo a atualização compatível do Expo. Não foi executado `audit fix --force`. Resolver antes de loja.
+
+Horário, OneTrust, MS Bit e PDF continuam depois do primeiro binário validado, conforme o escopo do review. Nenhuma publicação em loja foi feita.

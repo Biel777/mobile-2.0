@@ -1,10 +1,10 @@
-import type { LocalOrder, SubmitOrderPayload, SubmitOrderResult } from '../domain/types';
-import type { SalesApiClient } from '../api/client';
+import type { LocalOrder, SubmitOrderPayload, SubmitOrderResult } from '@rules/types';
+import type { SalesApiClient } from '@tradetools/client';
 
 export function toPayload(order: LocalOrder, distributors: SubmitOrderPayload['array_ordem_envio']): SubmitOrderPayload {
   return {
     order_client_id: order.orderClientId,
-    codigo_pedido: order.id,
+    codigo_pedido: order.customerOrderCode?.trim() || order.id,
     id_cliente: order.customerId,
     id_tabela: order.tableId,
     id_usuario: order.userId,

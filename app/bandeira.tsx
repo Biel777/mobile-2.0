@@ -1,13 +1,14 @@
-import { withSession } from '../src/components/require-session';
+import { withSession } from '@components/require-session';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { TabBar } from '../src/components/tabbar';
-import { Banner, Card } from '../src/components/ui';
-import { useAppStore } from '../src/data/store';
-import { gap, money } from '../src/domain/pricing';
-import { statusLabel } from '../src/domain/status';
-import type { FlagGoal } from '../src/domain/types';
+import { TabBar } from '@components/tabbar';
+import { Banner, Card } from '@components/ui';
+import { useAppStore } from '@bff/cases/sales';
+import { gap, money } from '@bff/cases/sales';
+import { statusLabel } from '@bff/cases/sales';
+import type { FlagGoal } from '@bff/contract';
+
 import { colors, fonts, space } from '../src/theme';
 
 function openFamilies(flag: FlagGoal) {

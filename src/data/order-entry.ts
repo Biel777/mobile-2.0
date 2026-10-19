@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import type { PdvRef } from '../domain/types';
+import type { PdvRef } from '@rules/types';
 import { useAppStore } from './store';
 
 /** Always open the selected PDV; incomplete sync is handled in the order screen. */

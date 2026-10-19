@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
-vi.mock('./storage', () => ({ appStorage: { getItem: async () => null, setItem: async () => {}, removeItem: async () => {} } }));
 import { createAppStore } from './store';
 import { fixtures } from './fixtures';
-import { isAttention, isUnread } from '../domain/order-updates';
-import type { SalesApiClient } from '../api/client';
+import { isAttention, isUnread } from '@rules/order-updates';
+import type { SalesApiClient } from '@tradetools/client';
+vi.mock('./storage', () => ({ appStorage: { getItem: async () => null, setItem: async () => {}, removeItem: async () => {} } }));
 const tick = () => new Promise(resolve => setTimeout(resolve, 0));
 function setup() {
   const values = new Map<string, string>();

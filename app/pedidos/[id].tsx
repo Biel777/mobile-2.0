@@ -1,15 +1,16 @@
-import { OrderUpdateHistory } from '../../src/components/order-updates';
-import { getOrderProgress } from '../../src/domain/order-progress';
-import { OrderProgress } from '../../src/components/order-progress';
-import { withSession } from '../../src/components/require-session';
+import { OrderUpdateHistory } from '@components/order-updates';
+import { getOrderProgress } from '@bff/cases/sales';
+import { OrderProgress } from '@components/order-progress';
+import { withSession } from '@components/require-session';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { ProductFace } from '../../src/components/product-face';
-import { Banner, Card, PrimaryButton } from '../../src/components/ui';
-import { useAppStore } from '../../src/data/store';
-import { money } from '../../src/domain/pricing';
-import { statusLabel } from '../../src/domain/status';
-import type { TrackedItem } from '../../src/domain/types';
+import { ProductFace } from '@components/product-face';
+import { Banner, Card, PrimaryButton } from '@components/ui';
+import { useAppStore } from '@bff/cases/sales';
+import { money } from '@bff/cases/sales';
+import { statusLabel } from '@bff/cases/sales';
+import type { TrackedItem } from '@bff/contract';
+
 import { colors, fonts, radius, space } from '../../src/theme';
 
 function lineNet(item: TrackedItem, qty: number) {

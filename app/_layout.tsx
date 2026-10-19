@@ -5,16 +5,19 @@ import { useEffect } from 'react';
 import { Platform, View } from 'react-native';
 import { useFonts } from 'expo-font';
 import NetInfo from '@react-native-community/netinfo';
-import { HeaderActions } from '../src/components/menu';
-import { useAppStore } from '../src/data/store';
+import { HeaderActions } from '@components/menu';
+import { useAppStore } from '@bff/cases/sales';
 import { colors, fonts } from '../src/theme';
 
-import { IntegrationStatus } from '../src/components/integration-status';
+import { IntegrationStatus } from '@components/integration-status';
+
+import { initializeConnection } from '@bff/cases/connection';
 
 const HUBS = ['/', '/clientes', '/pedidos', '/metas', '/positivacao', '/bandeira'];
 
 export default function Layout() {
   const path = usePathname();
+  useEffect(() => { void initializeConnection(); }, []);
   const hydrated = useAppStore(state => state.hydrated);
   const session = useAppStore(state => state.session);
   const authRequired = useAppStore(state => state.authRequired);
@@ -66,6 +69,7 @@ export default function Layout() {
         }}
       >
         <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="configuracao" options={{ title: 'Configuração' }} />
         <Stack.Screen name="clientes" options={{ title: 'Escolher PDV' }} />
         <Stack.Screen name="pedido/[id]" options={{ title: 'Digitação' }} />
         <Stack.Screen name="pedido/[id]/revisao" options={{ title: 'Revisão' }} />

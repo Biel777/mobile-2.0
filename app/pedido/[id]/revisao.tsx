@@ -1,12 +1,13 @@
-import { validateDistributorSelection } from '../../../src/domain/order-distributors';
-import { withSession } from '../../../src/components/require-session';
+import { resolveOrderTable } from '@bff/cases/sales';
+import { reviewOrder } from '@bff/cases/sales';
+import { withSession } from '@components/require-session';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { ProductFace } from '../../../src/components/product-face';
-import { Banner, Card, GhostButton, PrimaryButton } from '../../../src/components/ui';
-import { useAppStore } from '../../../src/data/store';
-import { money, quoteOrder } from '../../../src/domain/pricing';
-import { canSubmit, validateOrder } from '../../../src/domain/validation';
+import { ProductFace } from '@components/product-face';
+import { Banner, Card, GhostButton, PrimaryButton } from '@components/ui';
+import { useAppStore } from '@bff/cases/sales';
+import { money } from '@bff/cases/sales';
+
 import { colors, fonts, radius, space } from '../../../src/theme';
 
 function RevisaoScreen() {
@@ -22,35 +23,17 @@ function RevisaoScreen() {
   }
 
   const customer = catalog.customers.find((item) => item.id === order.customerId);
-  const table = catalog.tables.find((item) => item.id === order.tableId);
+  const table = resolveOrderTable(catalog.tables.find((item) => item.id === order.tableId), order);
   if (!customer || !table) {
     return <Banner tone="danger" text="Cadastro incompleto no cache." />;
   }
 
   const coupon = catalog.coupons.find((item) => item.code === order.couponCode);
-  const quote = quoteOrder(table, order.lines, coupon);
+  const { quote, issues, month, minLeft, canSubmit: ok, scheduled } = reviewOrder({ order, table, customer, coupon });
   const ordem = (order.distributorIds ?? [])
     .map((distributorId) => customer.distributors.find((item) => item.id === distributorId))
     .filter((item): item is NonNullable<typeof item> => Boolean(item));
-  const issues = validateOrder({ table, customer, lines: order.lines, coupon });
-  issues.push(...validateDistributorSelection({ selected: order.distributorIds ?? [], prazos: order.prazos ?? {}, released: customer.distributors }));
-  if (order.couponCode && !coupon) {
-    issues.push({ code: 'COUPON', message: 'Cupom não confirmado. A validação é feita no envio.', blocking: true });
-  }
   const dates = order.scheduleDates ?? [];
-  if (dates.length > 1 && !table.dividePedido) {
-    issues.push({ code: 'SPLIT', message: 'Esta condição envia em uma data só.', blocking: true });
-  }
-  const today = new Date().toISOString().slice(0, 10);
-  dates.forEach((date, index) => {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date < today) {
-      issues.push({ code: `DATE_${index}`, message: 'Use uma data futura no formato AAAA-MM-DD.', blocking: true });
-    }
-  });
-  const ok = canSubmit(issues);
-  const month = table.monthBilledNet ?? 0;
-  const current = table.minValueBasis === 'GROSS' ? quote.gross : quote.net;
-  const minLeft = table.minValue - (current + month);
 
   return (
     <View style={styles.screen}>
@@ -123,6 +106,7 @@ function RevisaoScreen() {
               }
             />
           ) : null}
+          {scheduled.map(part => <Text key={part.date} style={styles.meta}>{part.date}: {part.lines.reduce((sum, line) => sum + line.quantity, 0)} unidades (prévia)</Text>)}
           {table.dividePedido && dates.length > 0 ? (
             <TextInput
               value={dates[1] ?? ''}

@@ -1,11 +1,11 @@
-import { AppIcon } from '../../../src/components/icons';
-import { withSession } from '../../../src/components/require-session';
+import { AppIcon } from '@components/icons';
+import { withSession } from '@components/require-session';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { ProductFace } from '../../../src/components/product-face';
-import { Banner, Card } from '../../../src/components/ui';
-import { useAppStore } from '../../../src/data/store';
-import { money } from '../../../src/domain/pricing';
+import { ProductFace } from '@components/product-face';
+import { Banner, Card } from '@components/ui';
+import { useAppStore } from '@bff/cases/sales';
+import { money } from '@bff/cases/sales';
 import { colors, fonts, radius, space } from '../../../src/theme';
 
 function invoiceDate(value: string) {

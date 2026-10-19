@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createAppStorage } from './storage';
+import type { ApiConfig } from '@tradetools/config';
 vi.mock('@react-native-async-storage/async-storage', () => ({ default: {} }));
 vi.mock('react-native', () => ({ Platform: { OS: 'web' } }));
 vi.mock('expo-secure-store', () => ({ getItemAsync: vi.fn(), setItemAsync: vi.fn(), deleteItemAsync: vi.fn() }));
-import { createAppStorage } from './storage';
-import type { ApiConfig } from '../api/config';
 const config: ApiConfig = { mode: 'http', protocol: 'legacy', baseUrl: 'https://tenant.example/app', imei: 'test', appVersion: '1', schedulePeriod: '08:00', timeZone: 'America/Sao_Paulo' };
 const key = `forca-vendas-v5-${config.mode}-${config.protocol}-${config.baseUrl}`;
 let values: Map<string, string>;

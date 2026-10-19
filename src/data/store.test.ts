@@ -1,10 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-vi.mock('./storage', () => ({ appStorage: { getItem: async () => null, setItem: async () => {}, removeItem: async () => {} } }));
 import { createAppStore } from './store';
-import { apiConfig } from '../api/config';
-afterEach(() => { apiConfig.protocol = 'mobile-v1'; });
+import { apiConfig } from '@tradetools/config';
+import * as api from '@tradetools/index';
 import { fixtures } from './fixtures';
-import type { SalesApiClient } from '../api/client';
+import type { SalesApiClient } from '@tradetools/client';
+vi.mock('./storage', () => ({ appStorage: { getItem: async () => null, setItem: async () => {}, removeItem: async () => {} } }));
+afterEach(() => { apiConfig.protocol = 'mobile-v1'; });
 
 const memory = () => {
   const values = new Map<string, string>();
@@ -27,6 +28,59 @@ function setup() {
 const tick = () => new Promise(resolve => setTimeout(resolve, 0));
 
 describe('integração da carteira e fila', () => {
+
+  it('revoga os getters do cliente antigo para que uma sync atrasada não use token do novo host', async () => {
+    const storage = memory();
+    const { client } = setup();
+    const factory = vi.spyOn(api, 'createSalesApiClient').mockReturnValue(client);
+    try {
+      const store = createAppStore(storage, undefined, true);
+      const first = { ...apiConfig, mode: 'http' as const, protocol: 'legacy' as const, baseUrl: 'http://first/webol' };
+      await store.configure(first, storage);
+      store.setState({ session: { token: 'first-token', userId: 77, name: 'Conta' } });
+      const oldOptions = factory.mock.calls[0][0]!;
+      expect(oldOptions.getSession?.()?.token).toBe('first-token');
+      await store.configure({ ...first, baseUrl: 'https://second/webol' }, storage);
+      store.setState({ session: { token: 'second-token', userId: 77, name: 'Conta' } });
+      expect(oldOptions.getSession?.()).toBeNull();
+      expect(oldOptions.getToken?.()).toBeUndefined();
+      expect(factory.mock.calls[1][0]?.getSession?.()?.token).toBe('second-token');
+    } finally { factory.mockRestore(); }
+  });
+
+  it('isola destinos, restaura rascunhos ao voltar e nunca carrega o token do outro host', async () => {
+    const storage = memory();
+    const { client } = setup();
+    const store = createAppStore(storage, client, true);
+    const first = { ...apiConfig, mode: 'http' as const, protocol: 'legacy' as const, baseUrl: 'http://first/webol' };
+    const second = { ...first, baseUrl: 'https://second/tenant/webol' };
+    await store.configure(first, storage);
+    await store.getState().login('marina', 'demo');
+    store.getState().createDraft(11, 101);
+    await store.configure(second, storage);
+    expect(store.getState().session).toBeNull();
+    expect(store.getState().orders).toEqual([]);
+    await store.getState().login('marina', 'demo');
+    await store.configure(first, storage);
+    expect(store.getState().orders).toHaveLength(1);
+    expect(store.getState().session).toBeNull();
+    expect(store.persist.getOptions().name).toContain('http://first/webol');
+  });
+
+  it('aguarda a configuração persistida antes de gravar e restaura sessão nativa na inicialização', async () => {
+    const storage = memory();
+    const { client } = setup();
+    const config = { ...apiConfig, baseUrl: 'http://device/webol' };
+    const name = `forca-vendas-v5-${config.mode}-${config.protocol}-${config.baseUrl}`;
+    const session = { token: 'secure-token', userId: 77, name: 'Conta' };
+    await storage.setItem(name, JSON.stringify({ state: { session, orders: [], catalog: fixtures }, version: 0 }));
+    const store = createAppStore(storage, client, true);
+    store.getState().setOnline(false);
+    await store.configure(config, storage, config.baseUrl, true);
+    expect(store.getState().session).toEqual(session);
+    expect(store.getState().online).toBe(false);
+    expect(store.getState().hydrated).toBe(true);
+  });
 
   it('não repete Legacy incerto automaticamente; exige confirmação explícita', async () => {
     apiConfig.protocol = 'legacy';

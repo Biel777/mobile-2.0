@@ -1,11 +1,11 @@
-import { withSession } from '../src/components/require-session';
+import { withSession } from '@components/require-session';
 import { useMemo, useState } from 'react';
 import { FlatList, StyleSheet, Text, TextInput, View } from 'react-native';
-import { TabBar } from '../src/components/tabbar';
-import { Banner, Card, PrimaryButton } from '../src/components/ui';
-import { useAppStore } from '../src/data/store';
-import { startOrderForPdv } from '../src/data/order-entry';
-import { isPortfolioCustomer } from '../src/domain/portfolio';
+import { TabBar } from '@components/tabbar';
+import { Banner, Card, PrimaryButton } from '@components/ui';
+import { useAppStore } from '@bff/cases/sales';
+import { startOrderForPdv } from '@bff/cases/sales';
+import { isPortfolioCustomer } from '@bff/cases/sales';
 import { colors, fonts, space } from '../src/theme';
 
 function ClientesScreen() {

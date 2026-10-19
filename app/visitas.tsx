@@ -1,13 +1,13 @@
-import { isPortfolioCustomer } from '../src/domain/portfolio';
+import { isPortfolioCustomer } from '@bff/cases/sales';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { withSession } from '../src/components/require-session';
-import { AppIcon } from '../src/components/icons';
-import { Banner } from '../src/components/ui';
-import { useVisitDay } from '../src/components/visits';
-import { useAppStore } from '../src/data/store';
-import { getVisitCustomers } from '../src/domain/visits';
+import { withSession } from '@components/require-session';
+import { AppIcon } from '@components/icons';
+import { Banner } from '@components/ui';
+import { useVisitDay } from '@components/visits';
+import { useAppStore } from '@bff/cases/sales';
+import { getVisitCustomers } from '@bff/cases/sales';
 import { colors, fonts, radius, space } from '../src/theme';
 
 function VisitsScreen() {

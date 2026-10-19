@@ -1,4 +1,4 @@
-import type { CommercialTable, Coupon, Customer, FlagGoal, Goals, TrackedOrder } from '../domain/types';
+import type { CommercialTable, Coupon, Customer, FlagGoal, Goals, TrackedOrder } from '@rules/types';
 
 const regular: CommercialTable = {
   id: 101,

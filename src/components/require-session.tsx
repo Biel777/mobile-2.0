@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react';
 import { Redirect } from 'expo-router';
-import { useAppStore } from '../data/store';
+import { useAppStore } from '@bff/cases/sales';
 
 /** Guard screens inside the mounted navigator, so deep links can safely redirect. */
 export function withSession<P extends object>(Screen: ComponentType<P>) {
